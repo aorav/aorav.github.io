@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>قائمة الطعام</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Supabase (Phase 2) – included now so the variable block is ready -->
+  <!-- <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> -->
+
+  <style>
+    /* ── Brand variable ───────────────────────────────────────── */
+    :root { --brand: #8B0000; }
+
+    /* ── Hide scrollbar on category tabs ─────────────────────── */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* ── Animations ───────────────────────────────────────────── */
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes cartPop {
+      0%,100% { transform: scale(1); }
+      40%     { transform: scale(1.18); }
+      70%     { transform: scale(0.95); }
+    }
+
+    .slide-up  { animation: slideUp 0.38s cubic-bezier(.32,.72,0,1) both; }
+    .fade-in   { animation: fadeIn  0.2s ease both; }
+    .cart-pop  { animation: cartPop 0.45s ease both; }
+
+    /* ── Tab pill active state ────────────────────────────────── */
+    .tab-pill {
+      transition: background .2s, color .2s, border-color .2s;
+    }
+    .tab-pill.active {
+      background-color: var(--brand);
+      color: #fff;
+      border-color: var(--brand);
+    }
+
+    /* ── Item card image ──────────────────────────────────────── */
+    .item-thumb {
+      width: 100%;
+      height: 7rem;          /* 112 px */
+      object-fit: cover;
+    }
+
+    /* ── Unavailable overlay ──────────────────────────────────── */
+    .item-unavailable { opacity: .45; pointer-events: none; }
+
+    /* ── Two-line clamp ───────────────────────────────────────── */
+    .clamp2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* ── Custom accent color for radio / checkbox ─────────────── */
+    input[type="radio"],
+    input[type="checkbox"] { accent-color: var(--brand); }
+
+    /* ── Modal backdrop blur ──────────────────────────────────── */
+    .backdrop { backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans">
+
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║                   CUSTOMER VIEW                         ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<div id="customer-view" class="max-w-lg mx-auto min-h-screen relative">
+
+  <!-- ── HEADER ────────────────────────────────────────────────── -->
+  <header class="relative bg-white shadow-sm">
+
+    <!-- Cover image (~200 px tall) -->
+    <div class="relative h-48 overflow-hidden">
+      <img
+        src="https://picsum.photos/800/400?random=1"
+        alt="cover"
+        class="w-full h-full object-cover"
+      />
+      <!-- subtle dark gradient at bottom so logo pops -->
+      <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/40"></div>
+    </div>
+
+    <!-- Logo — overlaps the cover image bottom -->
+    <div class="flex justify-center -mt-10 relative z-10">
+      <img
+        src="https://picsum.photos/80/80?random=77"
+        alt="logo"
+        class="w-20 h-20 rounded-full border-4 border-white shadow-lg object-cover"
+      />
+    </div>
+
+    <!-- Restaurant name + tagline -->
+    <div class="text-center mt-2 px-4">
+      <h1 id="restaurant-name" class="text-xl font-bold text-gray-900">
+        مطعم البرغر الملكي
+      </h1>
+      <p id="restaurant-tagline" class="text-sm text-gray-500 mt-0.5">
+        أشهى البرغر في المملكة · The Finest Burgers in the Kingdom
+      </p>
+    </div>
+
+    <!-- Table badge (shown only when ?table=N present) -->
+    <div id="table-badge" class="hidden justify-center mt-2">
+      <span
+        class="inline-flex items-center gap-1 bg-amber-100 text-amber-800
+               text-xs font-semibold px-3 py-1 rounded-full"
+      >
+        🪑 <span id="table-label">طاولة</span>&nbsp;<span id="table-number"></span>
+      </span>
+    </div>
+
+    <!-- Social icons + Language toggle -->
+    <div class="flex items-center justify-between px-5 py-3 mt-1">
+
+      <!-- Social icons -->
+      <div class="flex items-center gap-4">
+
+        <!-- Instagram -->
+        <a href="#" aria-label="Instagram"
+           class="text-gray-500 hover:text-pink-600 transition-colors">
+          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2.163c3.204 0 3.584.012 4.85.07
+                     3.252.148 4.771 1.691 4.919 4.919
+                     .058 1.265.069 1.645.069 4.849
+                     0 3.205-.012 3.584-.069 4.849
+                     -.149 3.225-1.664 4.771-4.919 4.919
+                     -1.266.058-1.644.07-4.85.07
+                     -3.204 0-3.584-.012-4.849-.07
+                     -3.26-.149-4.771-1.699-4.919-4.92
+                     -.058-1.265-.07-1.644-.07-4.849
+                     0-3.204.013-3.583.07-4.849
+                     .149-3.227 1.664-4.771 4.919-4.919
+                     1.266-.057 1.645-.069 4.849-.069z
+                     M12 0C8.741 0 8.333.014 7.053.072
+                     2.695.272.273 2.69.073 7.052
+                     .014 8.333 0 8.741 0 12
+                     c0 3.259.014 3.668.072 4.948
+                     .2 4.358 2.618 6.78 6.98 6.98
+                     1.281.058 1.689.072 4.948.072
+                     3.259 0 3.668-.014 4.948-.072
+                     4.354-.2 6.782-2.618 6.979-6.98
+                     .059-1.28.073-1.689.073-4.948
+                     0-3.259-.014-3.667-.072-4.947
+                     -.196-4.354-2.617-6.78-6.979-6.98
+                     C15.668.014 15.259 0 12 0z
+                     M12 5.838a6.162 6.162 0 100 12.324
+                     6.162 6.162 0 000-12.324z
+                     M12 16a4 4 0 110-8 4 4 0 010 8z
+                     M18.406 4.155a1.44 1.44 0 100 2.88
+                     1.44 1.44 0 000-2.88z"/>
+          </svg>
+        </a>
+
+        <!-- WhatsApp -->
+        <a id="header-wa" href="#" aria-label="WhatsApp"
+           class="text-gray-500 hover:text-green-500 transition-colors">
+          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967
+                     -.273-.099-.471-.148-.67.15
+                     -.197.297-.767.966-.94 1.164
+                     -.173.199-.347.223-.644.075
+                     -.297-.15-1.255-.463-2.39-1.475
+                     -.883-.788-1.48-1.761-1.653-2.059
+                     -.173-.297-.018-.458.13-.606
+                     .134-.133.298-.347.446-.52
+                     .149-.174.198-.298.298-.497
+                     .099-.198.05-.371-.025-.52
+                     -.075-.149-.669-1.612-.916-2.207
+                     -.242-.579-.487-.5-.669-.51
+                     -.173-.008-.371-.01-.57-.01
+                     -.198 0-.52.074-.792.372
+                     -.272.297-1.04 1.016-1.04 2.479
+                     0 1.462 1.065 2.875 1.213 3.074
+                     .149.198 2.096 3.2 5.077 4.487
+                     .709.306 1.262.489 1.694.625
+                     .712.227 1.36.195 1.871.118
+                     .571-.085 1.758-.719 2.006-1.413
+                     .248-.694.248-1.289.173-1.413
+                     -.074-.124-.272-.198-.57-.347z
+                     M12.05 0C5.495 0 .16 5.335.157 11.892
+                     c0 2.096.547 4.142 1.588 5.945L.057 24
+                     l6.305-1.654a11.882 11.882 0 005.683 1.448h.005
+                     c6.554 0 11.89-5.335 11.893-11.893
+                     a11.821 11.821 0 00-3.48-8.413
+                     A11.815 11.815 0 0012.05 0z"/>
+          </svg>
+        </a>
+
+        <!-- Snapchat -->
+        <a href="#" aria-label="Snapchat"
+           class="text-gray-500 hover:text-yellow-400 transition-colors">
+          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12.206.793c.99 0 4.347.276 5.93 3.821.529 1.193.403 3.219.304 4.92
+                     5.07 1.836-.583 3.362-1.701.545-.278 1.633.086 1.741 1.02.067.597-.33
+                     1.155-.943 1.232-.828.103-1.462.03-1.923.258-.54.27-.745 1.041-.762 1.178
+                     -.083.619.293 1.2 1.004 1.521.567.25.868.558.906.78.056.353-.04.638-.199.885
+                     a11.68 11.68 0 01-2.462 2.573c-.76.576-1.524 1.045-2.33 1.345-.88.324-1.74.472
+                     -2.596.472-.876 0-1.757-.155-2.637-.472-.8-.3-1.565-.77-2.33-1.345a11.53 11.53
+                     0 01-2.458-2.573c-.162-.247-.259-.532-.198-.885.039-.222.338-.53.906-.78.71-.321
+                     1.087-.902 1.004-1.521-.017-.137-.222-.908-.762-1.178-.46-.228-1.094-.155-1.924
+                     -.258-.612-.077-1.009-.635-.943-1.232.108-.934 1.197-1.298 1.742-1.02 1.826.915
+                     3.484.07 3.57-1.836-.1-1.199-.225-3.225.304-4.42C7.859 1.07 11.216.793 12.206.793z"/>
+          </svg>
+        </a>
+      </div>
+
+      <!-- Language toggle -->
+      <button
+        id="lang-btn"
+        onclick="toggleLang()"
+        class="px-4 py-1.5 rounded-full border-2 text-sm font-bold
+               text-gray-700 border-gray-300 hover:border-gray-500
+               transition-colors"
+      >
+        EN
+      </button>
+    </div>
+
+  </header>
+  <!-- ── /HEADER ─────────────────────────────────────────────── -->
+
+  <!-- ── STICKY CATEGORY TABS ──────────────────────────────────── -->
+  <nav
+    id="category-nav"
+    class="sticky top-0 z-40 bg-white shadow-sm border-b border-gray-100"
+  >
+    <div
+      id="category-tabs"
+      class="flex gap-2 px-3 py-2.5 overflow-x-auto no-scrollbar"
+    >
+      <!-- Pills rendered by JS -->
+    </div>
+  </nav>
+  <!-- ── /STICKY CATEGORY TABS ─────────────────────────────────── -->
+
+  <!-- ── MENU CONTENT ──────────────────────────────────────────── -->
+  <!-- bottom padding so last items clear the floating cart bar -->
+  <main id="menu-content" class="px-3 pt-2 pb-36">
+    <!-- Category sections rendered by JS -->
+  </main>
+  <!-- ── /MENU CONTENT ─────────────────────────────────────────── -->
+
+</div><!-- /customer-view -->
+
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║                  ITEM DETAIL MODAL                      ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<div
+  id="item-modal"
+  class="hidden fixed inset-0 z-50 flex items-end justify-center"
+  role="dialog"
+  aria-modal="true"
+>
+  <!-- Backdrop -->
+  <div
+    class="absolute inset-0 bg-black/60 backdrop"
+    onclick="closeItemModal()"
+  ></div>
+
+  <!-- Sheet (max-lg centred on desktop) -->
+  <div
+    id="item-modal-sheet"
+    class="relative w-full max-w-lg bg-white rounded-t-3xl overflow-hidden slide-up"
+  >
+    <!-- Scrollable inner -->
+    <div class="max-h-[92vh] overflow-y-auto">
+
+      <!-- Hero image + close btn -->
+      <div class="relative">
+        <img
+          id="modal-img"
+          src=""
+          alt=""
+          class="w-full h-56 object-cover"
+        />
+        <button
+          onclick="closeItemModal()"
+          class="absolute top-3 right-3 bg-white/90 rounded-full p-2
+                 shadow-md active:scale-90 transition-transform"
+          aria-label="Close"
+        >
+          <svg class="w-5 h-5 text-gray-700" fill="none"
+               stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Content padding -->
+      <div class="p-5">
+
+        <!-- Name -->
+        <h2 id="modal-name"
+            class="text-2xl font-bold text-gray-900 leading-snug">
+        </h2>
+
+        <!-- Allergen tags -->
+        <div id="modal-allergens" class="flex flex-wrap gap-1.5 mt-2"></div>
+
+        <!-- Description -->
+        <p id="modal-desc"
+           class="text-gray-500 text-sm mt-3 leading-relaxed">
+        </p>
+
+        <!-- Base price -->
+        <p id="modal-base-price"
+           class="mt-3 text-lg font-bold"
+           style="color:var(--brand)">
+        </p>
+
+        <!-- ── Customisation groups (rendered by JS) ── -->
+        <div id="modal-customizations" class="mt-4 space-y-5"></div>
+
+        <!-- ── Quantity selector ── -->
+        <div class="flex items-center justify-center gap-6 mt-6">
+          <button
+            onclick="changeQty(-1)"
+            class="w-11 h-11 rounded-full border-2 flex items-center justify-center
+                   text-2xl font-bold text-gray-700 active:scale-90 transition-transform"
+            style="border-color:var(--brand)"
+            aria-label="Decrease quantity"
+          >−</button>
+
+          <span id="modal-qty"
+                class="text-2xl font-bold text-gray-900 w-8 text-center tabular-nums">
+            1
+          </span>
+
+          <button
+            onclick="changeQty(1)"
+            class="w-11 h-11 rounded-full flex items-center justify-center
+                   text-2xl font-bold text-white active:scale-90 transition-transform"
+            style="background:var(--brand)"
+            aria-label="Increase quantity"
+          >+</button>
+        </div>
+
+        <!-- ── Add to Cart button ── -->
+        <button
+          onclick="addToCart()"
+          class="w-full mt-5 mb-4 py-4 rounded-2xl text-white font-bold
+                 text-lg shadow-lg active:scale-95 transition-transform
+                 flex items-center justify-center gap-3"
+          style="background:var(--brand)"
+        >
+          <span id="add-btn-label">أضف للسلة</span>
+          <span id="add-btn-price"
+                class="bg-white/20 px-3 py-0.5 rounded-full text-base font-semibold">
+          </span>
+        </button>
+
+      </div><!-- /content padding -->
+    </div><!-- /scrollable inner -->
+  </div><!-- /sheet -->
+</div>
+<!-- ── /ITEM DETAIL MODAL ──────────────────────────────────────── -->
+
+
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║              FLOATING CART BAR                          ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<div
+  id="cart-bar"
+  class="hidden fixed bottom-4 left-4 right-4 max-w-lg
+         mx-auto z-40"
+>
+  <button
+    onclick="openCart()"
+    id="cart-bar-btn"
+    class="w-full text-white rounded-2xl px-5 py-4
+           flex items-center justify-between shadow-2xl
+           active:scale-95 transition-transform"
+    style="background:var(--brand)"
+  >
+    <div class="flex items-center gap-2">
+      <span class="text-xl">🛒</span>
+      <span id="cart-bar-count"
+            class="font-bold text-base tabular-nums">
+        0
+      </span>
+    </div>
+    <span id="cart-bar-total"
+          class="font-bold text-base tabular-nums">
+      0 ريال
+    </span>
+  </button>
+</div>
+<!-- ── /FLOATING CART BAR ─────────────────────────────────────── -->
+
+
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║                   CART SHEET                            ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<div
+  id="cart-sheet"
+  class="hidden fixed inset-0 z-50 flex items-end justify-center"
+  role="dialog"
+  aria-modal="true"
+>
+  <!-- Backdrop -->
+  <div
+    class="absolute inset-0 bg-black/60 backdrop"
+    onclick="closeCart()"
+  ></div>
+
+  <!-- Sheet panel -->
+  <div
+    id="cart-sheet-panel"
+    class="relative w-full max-w-lg bg-white rounded-t-3xl
+           flex flex-col slide-up"
+    style="max-height:85vh"
+  >
+
+    <!-- Sheet header -->
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <h2 id="cart-title"
+          class="text-xl font-bold text-gray-900">
+        سلة الطلبات
+      </h2>
+      <button
+        onclick="closeCart()"
+        class="p-2 rounded-full hover:bg-gray-100 transition-colors"
+        aria-label="Close cart"
+      >
+        <svg class="w-5 h-5 text-gray-600" fill="none"
+             stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Items list (scrollable) -->
+    <div id="cart-items" class="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+      <!-- Rendered by JS -->
+    </div>
+
+    <!-- Footer: subtotal + WhatsApp button -->
+    <div class="px-5 py-4 border-t border-gray-100 bg-gray-50 rounded-b-3xl">
+
+      <!-- Subtotal row -->
+      <div class="flex items-center justify-between mb-4">
+        <span id="subtotal-label"
+              class="text-base font-semibold text-gray-700">
+          المجموع
+        </span>
+        <span id="cart-subtotal"
+              class="text-xl font-bold text-gray-900 tabular-nums">
+        </span>
+      </div>
+
+      <!-- WhatsApp order button -->
+      <button
+        onclick="sendWhatsApp()"
+        class="w-full py-4 rounded-2xl text-white font-bold text-lg
+               flex items-center justify-center gap-2
+               active:scale-95 transition-transform shadow-lg"
+        style="background:#25D366"
+      >
+        <!-- WhatsApp logo -->
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967
+                   -.273-.099-.471-.148-.67.15
+                   -.197.297-.767.966-.94 1.164
+                   -.173.199-.347.223-.644.075
+                   -.297-.15-1.255-.463-2.39-1.475
+                   -.883-.788-1.48-1.761-1.653-2.059
+                   -.173-.297-.018-.458.13-.606
+                   .134-.133.298-.347.446-.52
+                   .149-.174.198-.298.298-.497
+                   .099-.198.05-.371-.025-.52
+                   -.075-.149-.669-1.612-.916-2.207
+                   -.242-.579-.487-.5-.669-.51
+                   -.173-.008-.371-.01-.57-.01
+                   -.198 0-.52.074-.792.372
+                   -.272.297-1.04 1.016-1.04 2.479
+                   0 1.462 1.065 2.875 1.213 3.074
+                   .149.198 2.096 3.2 5.077 4.487
+                   .709.306 1.262.489 1.694.625
+                   .712.227 1.36.195 1.871.118
+                   .571-.085 1.758-.719 2.006-1.413
+                   .248-.694.248-1.289.173-1.413
+                   -.074-.124-.272-.198-.57-.347z
+                   M12.05 0C5.495 0 .16 5.335.157 11.892
+                   c0 2.096.547 4.142 1.588 5.945L.057 24
+                   l6.305-1.654a11.882 11.882 0 005.683 1.448h.005
+                   c6.554 0 11.89-5.335 11.893-11.893
+                   a11.821 11.821 0 00-3.48-8.413
+                   A11.815 11.815 0 0012.05 0z"/>
+        </svg>
+        <span id="wa-btn-label">اطلب عبر واتساب</span>
+      </button>
+
+    </div><!-- /footer -->
+  </div><!-- /panel -->
+</div>
+<!-- ── /CART SHEET ─────────────────────────────────────────────── -->
+
+
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║                    TOAST                                ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<div
+  id="toast"
+  class="hidden fixed top-5 left-1/2 -translate-x-1/2 z-[100]
+         bg-gray-900 text-white text-sm font-semibold
+         px-5 py-3 rounded-2xl shadow-2xl fade-in
+         pointer-events-none whitespace-nowrap"
+></div>
+<!-- ── /TOAST ─────────────────────────────────────────────────── -->
+
+
+<script>
+/* ================================================================
+   CONFIG
+================================================================ */
+const BRAND_COLOR     = "#8B0000"
+const SUPABASE_URL    = "https://giiylicbqxqqiqwhjovr.supabase.co"
+const SUPABASE_KEY    = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpaXlsaWNicXhxcWlxd2hqb3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNDk2NzksImV4cCI6MjA5MTcyNTY3OX0.OtdYaXSXWVVxy2MpZIXW7xtGdIJJwddG0VytUCmSIuA"
+const WHATSAPP_NUMBER = "966500000000"
+const ADMIN_USER      = "admin"
+const ADMIN_PASS      = "1234"
+
+/* ================================================================
+   I18N STRINGS
+================================================================ */
+const STR = {
+  ar: {
+    addToCart     : "أضف للسلة",
+    cartTitle     : "سلة الطلبات",
+    subtotal      : "المجموع",
+    waBtn         : "اطلب عبر واتساب",
+    unavailable   : "غير متاح",
+    tableLabel    : "طاولة",
+    sarSuffix     : "ريال",
+    itemSingular  : "صنف",
+    itemPlural    : "أصناف",
+    langSwitch    : "EN",
+    waTableLine   : "🍽️ طاولة",
+    waTotalLine   : "المجموع",
+  },
+  en: {
+    addToCart     : "Add to Cart",
+    cartTitle     : "Your Cart",
+    subtotal      : "Subtotal",
+    waBtn         : "Order via WhatsApp",
+    unavailable   : "Unavailable",
+    tableLabel    : "Table",
+    sarSuffix     : "SAR",
+    itemSingular  : "item",
+    itemPlural    : "items",
+    langSwitch    : "AR",
+    waTableLine   : "🍽️ Table",
+    waTotalLine   : "Total",
+  }
+}
+
+/* ================================================================
+   ALLERGEN DICTIONARY
+================================================================ */
+const ALLERGENS = {
+  gluten   : { ar: "جلوتين",       en: "Gluten",    emoji: "🌾" },
+  dairy    : { ar: "ألبان",        en: "Dairy",     emoji: "🥛" },
+  eggs     : { ar: "بيض",         en: "Eggs",      emoji: "🥚" },
+  nuts     : { ar: "مكسرات",      en: "Nuts",      emoji: "🥜" },
+  sesame   : { ar: "سمسم",        en: "Sesame",    emoji: "🫙" },
+  shellfish: { ar: "مأكولات بحرية",en: "Shellfish", emoji: "🦐" },
+  soy      : { ar: "صويا",        en: "Soy",       emoji: "🫘" },
+  spicy    : { ar: "حار",         en: "Spicy",     emoji: "🌶️" },
+}
+
+/* ================================================================
+   HARDCODED DUMMY DATA  (Phase 1 — no Supabase)
+================================================================ */
+const CATEGORIES = [
+  { id: 1, sort_order: 1,
+    name_ar: "برغر",   name_en: "Burgers",
+    desc_ar: "برغر طازج مصنوع يدوياً بأجود المكونات",
+    desc_en: "Freshly hand-crafted burgers with premium ingredients" },
+  { id: 2, sort_order: 2,
+    name_ar: "سناكس",  name_en: "Snacks",
+    desc_ar: "وجبات خفيفة وأصناف جانبية مميزة",
+    desc_en: "Delicious snacks and side dishes" },
+  { id: 3, sort_order: 3,
+    name_ar: "مشروبات", name_en: "Drinks",
+    desc_ar: "مشروبات باردة وساخنة متنوعة",
+    desc_en: "A variety of cold and hot beverages" },
+]
+
+const ITEMS = [
+  /* ── Burgers ── */
+  { id: 101, category_id: 1, sort_order: 1, available: true,
+    name_ar: "برغر كلاسيك",      name_en: "Classic Burger",
+    desc_ar: "لحم بقري طازج مع الجبن والخضار الطازجة وصوص البيت",
+    desc_en: "Fresh beef patty with cheese, fresh veggies and house sauce",
+    price: 29, image_url: "https://picsum.photos/400/300?random=101",
+    allergens: ["gluten","dairy","eggs"] },
+
+  { id: 102, category_id: 1, sort_order: 2, available: true,
+    name_ar: "برغر دبل تشيز",     name_en: "Double Cheeseburger",
+    desc_ar: "قطعتا لحم مع طبقة مزدوجة من الجبن الذائب اللذيذ",
+    desc_en: "Double beef patties with double melted cheese layers",
+    price: 39, image_url: "https://picsum.photos/400/300?random=102",
+    allergens: ["gluten","dairy"] },
+
+  { id: 103, category_id: 1, sort_order: 3, available: true,
+    name_ar: "برغر مشروم",        name_en: "Mushroom Burger",
+    desc_ar: "لحم مع الفطر المشوي والجبن السويسري وصوص الثوم",
+    desc_en: "Beef with grilled mushrooms, Swiss cheese and garlic sauce",
+    price: 34, image_url: "https://picsum.photos/400/300?random=103",
+    allergens: ["gluten","dairy"] },
+
+  { id: 104, category_id: 1, sort_order: 4, available: false,
+    name_ar: "برغر سبايسي",       name_en: "Spicy Burger",
+    desc_ar: "لحم حار مع الفلفل الحار وجبن الشيدر وصوص السرارتشا",
+    desc_en: "Spicy beef with jalapeños, cheddar and sriracha sauce",
+    price: 32, image_url: "https://picsum.photos/400/300?random=104",
+    allergens: ["gluten","dairy","spicy"] },
+
+  /* ── Snacks ── */
+  { id: 201, category_id: 2, sort_order: 1, available: true,
+    name_ar: "بطاطس مقلية",       name_en: "French Fries",
+    desc_ar: "بطاطس ذهبية مقرمشة مع صوص الكاتشب والمايونيز",
+    desc_en: "Crispy golden fries with ketchup and mayo dip",
+    price: 12, image_url: "https://picsum.photos/400/300?random=201",
+    allergens: ["gluten"] },
+
+  { id: 202, category_id: 2, sort_order: 2, available: true,
+    name_ar: "أجنحة الدجاج",      name_en: "Chicken Wings",
+    desc_ar: "٦ أجنحة دجاج مشوية بتتبيلة خاصة مع صوص الباربيكيو",
+    desc_en: "6 grilled chicken wings with special marinade and BBQ sauce",
+    price: 22, image_url: "https://picsum.photos/400/300?random=202",
+    allergens: ["gluten","spicy"] },
+
+  { id: 203, category_id: 2, sort_order: 3, available: true,
+    name_ar: "حلقات البصل",       name_en: "Onion Rings",
+    desc_ar: "حلقات بصل مقرمشة محمرة ذهبية مع صوص الرانش الكريمي",
+    desc_en: "Crispy golden fried onion rings with ranch sauce",
+    price: 15, image_url: "https://picsum.photos/400/300?random=203",
+    allergens: ["gluten","dairy","eggs"] },
+
+  { id: 204, category_id: 2, sort_order: 4, available: true,
+    name_ar: "ناتشوز",            name_en: "Nachos",
+    desc_ar: "رقائق الذرة مع الجبن الذائب والسالسا والجالبينيو",
+    desc_en: "Tortilla chips with melted cheese, salsa and jalapeños",
+    price: 18, image_url: "https://picsum.photos/400/300?random=204",
+    allergens: ["gluten","dairy","spicy"] },
+
+  /* ── Drinks ── */
+  { id: 301, category_id: 3, sort_order: 1, available: true,
+    name_ar: "ليمون طازج",        name_en: "Fresh Lemonade",
+    desc_ar: "عصير ليمون طازج مع النعناع والثلج المهروس",
+    desc_en: "Fresh lemon juice with mint and crushed ice",
+    price: 10, image_url: "https://picsum.photos/400/300?random=301",
+    allergens: [] },
+
+  { id: 302, category_id: 3, sort_order: 2, available: true,
+    name_ar: "ميلك شيك شوكولا",   name_en: "Chocolate Milkshake",
+    desc_ar: "ميلك شيك كثيف بالشوكولا الداكنة والكريمة المخفوقة",
+    desc_en: "Thick milkshake with dark chocolate and whipped cream",
+    price: 16, image_url: "https://picsum.photos/400/300?random=302",
+    allergens: ["dairy"] },
+
+  { id: 303, category_id: 3, sort_order: 3, available: true,
+    name_ar: "عصير فراولة",       name_en: "Strawberry Juice",
+    desc_ar: "عصير فراولة طازج مبرد مع قطع الفراولة الطازجة",
+    desc_en: "Fresh chilled strawberry juice with fresh strawberry pieces",
+    price: 12, image_url: "https://picsum.photos/400/300?random=303",
+    allergens: [] },
+
+  { id: 304, category_id: 3, sort_order: 4, available: true,
+    name_ar: "كوكاكولا",          name_en: "Coca-Cola",
+    desc_ar: "مشروب غازي كوكاكولا مثلج",
+    desc_en: "Ice cold Coca-Cola",
+    price: 7, image_url: "https://picsum.photos/400/300?random=304",
+    allergens: [] },
+]
+
+/* Customizations (only for burgers in Phase 1) */
+const CUSTOMIZATIONS = [
+  { id: 1, item_id: 101, name_ar: "الحجم", name_en: "Size", type: "radio",
+    options: [
+      { name_ar: "صغير",  name_en: "Small",  price: 0 },
+      { name_ar: "وسط",   name_en: "Medium", price: 5 },
+      { name_ar: "كبير",  name_en: "Large",  price: 10 },
+    ]},
+  { id: 2, item_id: 101, name_ar: "إضافات", name_en: "Extras", type: "checkbox",
+    options: [
+      { name_ar: "جبن إضافي", name_en: "Extra Cheese", price: 3 },
+      { name_ar: "بيكون",     name_en: "Bacon",        price: 5 },
+      { name_ar: "أفوكادو",   name_en: "Avocado",      price: 4 },
+    ]},
+  { id: 3, item_id: 102, name_ar: "الحجم", name_en: "Size", type: "radio",
+    options: [
+      { name_ar: "عادي", name_en: "Regular", price: 0 },
+      { name_ar: "كبير", name_en: "Large",   price: 8 },
+    ]},
+  { id: 4, item_id: 102, name_ar: "إضافات", name_en: "Extras", type: "checkbox",
+    options: [
+      { name_ar: "جبن إضافي",  name_en: "Extra Cheese",  price: 3 },
+      { name_ar: "صوص خاص",    name_en: "Special Sauce", price: 2 },
+    ]},
+  { id: 5, item_id: 103, name_ar: "الحجم", name_en: "Size", type: "radio",
+    options: [
+      { name_ar: "عادي", name_en: "Regular", price: 0 },
+      { name_ar: "كبير", name_en: "Large",   price: 7 },
+    ]},
+  { id: 6, item_id: 104, name_ar: "درجة الحرارة", name_en: "Spice Level", type: "radio",
+    options: [
+      { name_ar: "خفيف",    name_en: "Mild",       price: 0 },
+      { name_ar: "حار",     name_en: "Hot",        price: 0 },
+      { name_ar: "حار جداً",name_en: "Extra Hot",  price: 0 },
+    ]},
+]
+
+/* ================================================================
+   APP STATE
+================================================================ */
+let lang        = "ar"        // "ar" | "en"
+let tableNo     = null        // from ?table= URL param
+let cart        = []          // array of cart line objects
+let activeItem  = null        // item being viewed in modal
+let modalQty    = 1           // qty in modal
+let modalCustom = {}          // { custId: [ selectedOptionIdx, … ] }
+
+/* shorthand */
+const s = k => STR[lang][k]
+
+/* ================================================================
+   INIT
+================================================================ */
+function init () {
+  const params = new URLSearchParams(location.search)
+  tableNo = params.get("table")
+
+  if (tableNo) {
+    document.getElementById("table-badge").classList.replace("hidden","flex")
+    document.getElementById("table-number").textContent = tableNo
+  }
+
+  document.getElementById("header-wa").href = `https://wa.me/${WHATSAPP_NUMBER}`
+
+  renderTabs()
+  renderMenu()
+  setupScrollSpy()
+}
+
+/* ================================================================
+   RENDER – CATEGORY TABS
+================================================================ */
+function renderTabs () {
+  const nav = document.getElementById("category-tabs")
+  nav.innerHTML = CATEGORIES
+    .slice()
+    .sort((a,b) => a.sort_order - b.sort_order)
+    .map((cat, i) => `
+      <button
+        id="tab-${cat.id}"
+        class="tab-pill flex-shrink-0 px-4 py-1.5 rounded-full
+               border-2 border-gray-200 text-sm font-semibold
+               text-gray-600 bg-white ${i === 0 ? "active" : ""}"
+        onclick="scrollToSection(${cat.id})"
+      >${lang === "ar" ? cat.name_ar : cat.name_en}</button>
+    `).join("")
+}
+
+/* ================================================================
+   RENDER – FULL MENU (category headings + 2-col grids)
+================================================================ */
+function renderMenu () {
+  const main = document.getElementById("menu-content")
+  main.innerHTML = CATEGORIES
+    .slice()
+    .sort((a,b) => a.sort_order - b.sort_order)
+    .map(cat => {
+      const catItems = ITEMS
+        .filter(it => it.category_id === cat.id)
+        .sort((a,b) => a.sort_order - b.sort_order)
+
+      const catName = lang === "ar" ? cat.name_ar : cat.name_en
+      const catDesc = lang === "ar" ? cat.desc_ar  : cat.desc_en
+
+      return `
+        <section id="section-${cat.id}" class="mb-8 scroll-mt-14">
+          <h2 class="text-xl font-bold text-gray-900 mb-0.5">${catName}</h2>
+          ${catDesc ? `<p class="text-sm text-gray-400 mb-3">${catDesc}</p>` : ""}
+          <div class="grid grid-cols-2 gap-3">
+            ${catItems.map(renderItemCard).join("")}
+          </div>
+        </section>
+      `
+    }).join("")
+}
+
+/* ================================================================
+   RENDER – SINGLE ITEM CARD
+================================================================ */
+function renderItemCard (item) {
+  const name  = lang === "ar" ? item.name_ar : item.name_en
+  const desc  = lang === "ar" ? item.desc_ar  : item.desc_en
+  const img   = item.image_url || `https://picsum.photos/400/300?random=${item.id}`
+
+  const allergenBadges = (item.allergens || []).map(key => {
+    const a = ALLERGENS[key]
+    if (!a) return ""
+    return `<span class="text-xs bg-orange-50 text-orange-700
+                         border border-orange-200 px-1.5 py-0.5 rounded-full">
+              ${a.emoji} ${lang === "ar" ? a.ar : a.en}
+            </span>`
+  }).join("")
+
+  const unavailableOverlay = !item.available ? `
+    <div class="absolute inset-0 bg-black/25 flex items-center justify-center rounded-t-2xl">
+      <span class="text-white text-xs font-bold bg-black/50 px-2 py-1 rounded-full">
+        ${s("unavailable")}
+      </span>
+    </div>` : ""
+
+  return `
+    <div
+      class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100
+             cursor-pointer active:scale-95 transition-transform
+             ${!item.available ? "item-unavailable" : ""}"
+      onclick="${item.available ? `openItemModal(${item.id})` : ""}"
+    >
+      <!-- Thumbnail -->
+      <div class="relative">
+        <img
+          src="${img}"
+          alt="${name}"
+          class="item-thumb"
+          onerror="this.src='https://picsum.photos/400/300?random=${item.id + 9}'"
+        />
+        ${unavailableOverlay}
+      </div>
+
+      <!-- Card body -->
+      <div class="p-2.5">
+        <h3 class="font-bold text-gray-800 text-sm leading-snug clamp2">${name}</h3>
+        <p  class="text-gray-400 text-xs mt-0.5 clamp2">${desc || ""}</p>
+        ${allergenBadges
+          ? `<div class="flex flex-wrap gap-1 mt-1.5">${allergenBadges}</div>`
+          : ""}
+        <p class="font-bold text-sm mt-2" style="color:var(--brand)">
+          ${item.price} ${s("sarSuffix")}
+        </p>
+      </div>
+    </div>
+  `
+}
+
+/* ================================================================
+   SCROLL SPY  (highlights the active tab as user scrolls)
+================================================================ */
+function setupScrollSpy () {
+  const sections = document.querySelectorAll("[id^='section-']")
+  const navH     = document.getElementById("category-nav").offsetHeight
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const catId = e.target.id.replace("section-","")
+        highlightTab(Number(catId))
+      }
+    })
+  }, { rootMargin: `-${navH + 8}px 0px -60% 0px`, threshold: 0 })
+
+  sections.forEach(sec => obs.observe(sec))
+}
+
+function scrollToSection (catId) {
+  const sec  = document.getElementById(`section-${catId}`)
+  const navH = document.getElementById("category-nav").offsetHeight
+  if (!sec) return
+  const top = sec.getBoundingClientRect().top + scrollY - navH - 8
+  window.scrollTo({ top, behavior: "smooth" })
+}
+
+function highlightTab (catId) {
+  document.querySelectorAll(".tab-pill").forEach(btn => {
+    const isActive = btn.id === `tab-${catId}`
+    btn.classList.toggle("active", isActive)
+    if (isActive) {
+      btn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" })
+    }
+  })
+}
+
+/* ================================================================
+   ITEM MODAL  – open
+================================================================ */
+function openItemModal (itemId) {
+  activeItem  = ITEMS.find(it => it.id === itemId)
+  if (!activeItem) return
+
+  modalQty    = 1
+  modalCustom = {}
+
+  const name = lang === "ar" ? activeItem.name_ar : activeItem.name_en
+  const desc = lang === "ar" ? activeItem.desc_ar  : activeItem.desc_en
+  const img  = activeItem.image_url || `https://picsum.photos/600/400?random=${itemId}`
+
+  document.getElementById("modal-img").src         = img
+  document.getElementById("modal-img").alt         = name
+  document.getElementById("modal-name").textContent = name
+  document.getElementById("modal-desc").textContent = desc || ""
+  document.getElementById("modal-base-price").textContent =
+    `${activeItem.price} ${s("sarSuffix")}`
+  document.getElementById("modal-qty").textContent = "1"
+
+  /* allergens */
+  document.getElementById("modal-allergens").innerHTML =
+    (activeItem.allergens || []).map(key => {
+      const a = ALLERGENS[key]
+      if (!a) return ""
+      return `<span class="text-xs bg-orange-50 text-orange-700
+                           border border-orange-200 px-2 py-0.5 rounded-full">
+                ${a.emoji} ${lang === "ar" ? a.ar : a.en}
+              </span>`
+    }).join("")
+
+  /* customisations */
+  renderModalCustomizations(itemId)
+
+  /* update price badge */
+  updateModalPrice()
+
+  /* show + animate */
+  const modal = document.getElementById("item-modal")
+  modal.classList.remove("hidden")
+  document.body.style.overflow = "hidden"
+
+  const sheet = document.getElementById("item-modal-sheet")
+  sheet.classList.remove("slide-up")
+  void sheet.offsetWidth          // force reflow
+  sheet.classList.add("slide-up")
+}
+
+/* ================================================================
+   ITEM MODAL  – customizations
+================================================================ */
+function renderModalCustomizations (itemId) {
+  const container = document.getElementById("modal-customizations")
+  const groups    = CUSTOMIZATIONS.filter(c => c.item_id === itemId)
+
+  container.innerHTML = groups.map(group => {
+    const gName = lang === "ar" ? group.name_ar : group.name_en
+
+    const optionsHtml = group.options.map((opt, idx) => {
+      const optName  = lang === "ar" ? opt.name_ar : opt.name_en
+      const priceTag = opt.price > 0
+        ? `<span class="text-xs font-semibold ms-auto" style="color:var(--brand)">
+             +${opt.price} ${s("sarSuffix")}
+           </span>`
+        : ""
+
+      /* pre-select first option of every radio group */
+      const checked = (group.type === "radio" && idx === 0) ? "checked" : ""
+      if (group.type === "radio" && idx === 0) {
+        if (!modalCustom[group.id]) modalCustom[group.id] = []
+        modalCustom[group.id] = [{ idx, opt }]
+      }
+
+      return `
+        <label
+          class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer
+                 transition-colors hover:bg-gray-50"
+          style="border-color: ${(group.type === "radio" && idx === 0) ? BRAND_COLOR : "#e5e7eb"}"
+          id="opt-label-${group.id}-${idx}"
+        >
+          <input
+            type="${group.type}"
+            name="cust-${group.id}"
+            value="${idx}"
+            ${checked}
+            onchange="onCustomChange(${group.id}, ${idx}, this)"
+            data-price="${opt.price}"
+            class="w-4 h-4 flex-shrink-0"
+          />
+          <span class="text-sm text-gray-700 flex-1">${optName}</span>
+          ${priceTag}
+        </label>
+      `
+    }).join("")
+
+    return `
+      <div class="border-t border-gray-100 pt-4">
+        <h4 class="text-sm font-bold text-gray-700 mb-3">${gName}</h4>
+        <div class="space-y-2" id="cust-group-${group.id}">
+          ${optionsHtml}
+        </div>
+      </div>
+    `
+  }).join("")
+}
+
+function onCustomChange (groupId, optIdx, input) {
+  const group = CUSTOMIZATIONS.find(c => c.id === groupId)
+  if (!group) return
+
+  /* update visual border */
+  document.querySelectorAll(`#cust-group-${groupId} label`).forEach(lbl => {
+    lbl.style.borderColor = "#e5e7eb"
+  })
+
+  if (group.type === "radio") {
+    /* single selection */
+    modalCustom[groupId] = [{ idx: optIdx, opt: group.options[optIdx] }]
+    const lbl = document.getElementById(`opt-label-${groupId}-${optIdx}`)
+    if (lbl) lbl.style.borderColor = BRAND_COLOR
+  } else {
+    /* multi-selection */
+    if (!modalCustom[groupId]) modalCustom[groupId] = []
+    if (input.checked) {
+      modalCustom[groupId].push({ idx: optIdx, opt: group.options[optIdx] })
+      const lbl = document.getElementById(`opt-label-${groupId}-${optIdx}`)
+      if (lbl) lbl.style.borderColor = BRAND_COLOR
+    } else {
+      modalCustom[groupId] = modalCustom[groupId].filter(x => x.idx !== optIdx)
+    }
+    /* re-colour checked items */
+    modalCustom[groupId].forEach(x => {
+      const lbl = document.getElementById(`opt-label-${groupId}-${x.idx}`)
+      if (lbl) lbl.style.borderColor = BRAND_COLOR
+    })
+  }
+  updateModalPrice()
+}
+
+/* ================================================================
+   ITEM MODAL  – qty & price badge
+================================================================ */
+function changeQty (delta) {
+  modalQty = Math.max(1, modalQty + delta)
+  document.getElementById("modal-qty").textContent = modalQty
+  updateModalPrice()
+}
+
+function updateModalPrice () {
+  let unit = parseFloat(activeItem.price)
+  Object.values(modalCustom).forEach(sel =>
+    sel.forEach(({ opt }) => { unit += parseFloat(opt.price || 0) })
+  )
+  const total = (unit * modalQty).toFixed(2)
+  document.getElementById("add-btn-label").textContent = s("addToCart")
+  document.getElementById("add-btn-price").textContent =
+    `${total} ${s("sarSuffix")}`
+}
+
+/* ================================================================
+   ITEM MODAL  – close
+================================================================ */
+function closeItemModal () {
+  document.getElementById("item-modal").classList.add("hidden")
+  document.body.style.overflow = ""
+}
+
+/* ================================================================
+   CART  – add item
+================================================================ */
+function addToCart () {
+  if (!activeItem) return
+
+  /* build extras list */
+  const extras = []
+  Object.values(modalCustom).forEach(sel =>
+    sel.forEach(({ opt }) => {
+      extras.push({
+        name : lang === "ar" ? opt.name_ar : opt.name_en,
+        price: parseFloat(opt.price || 0),
+      })
+    })
+  )
+
+  let unitPrice = parseFloat(activeItem.price)
+  extras.forEach(e => { unitPrice += e.price })
+
+  const name = lang === "ar" ? activeItem.name_ar : activeItem.name_en
+
+  /* merge with existing identical line if possible */
+  const extrasKey = JSON.stringify(extras)
+  const existing  = cart.find(
+    l => l.itemId === activeItem.id && l.extrasKey === extrasKey
+  )
+
+  if (existing) {
+    existing.qty += modalQty
+  } else {
+    cart.push({
+      lineId   : Date.now(),
+      itemId   : activeItem.id,
+      name,
+      unitPrice,
+      qty      : modalQty,
+      extras,
+      extrasKey,
+    })
+  }
+
+  closeItemModal()
+  refreshCartBar()
+  popCartBar()
+  showToast(lang === "ar" ? `✓ تمت إضافة ${name}` : `✓ Added ${name}`)
+}
+
+/* ================================================================
+   CART  – bar
+================================================================ */
+function refreshCartBar () {
+  const totalQty   = cart.reduce((s, l) => s + l.qty, 0)
+  const totalPrice = cart.reduce((s, l) => s + l.qty * l.unitPrice, 0)
+
+  const bar = document.getElementById("cart-bar")
+  if (totalQty === 0) { bar.classList.add("hidden"); return }
+  bar.classList.remove("hidden")
+
+  const label = totalQty === 1 ? s("itemSingular") : s("itemPlural")
+  document.getElementById("cart-bar-count").textContent =
+    `${totalQty} ${label}`
+  document.getElementById("cart-bar-total").textContent =
+    `${totalPrice.toFixed(2)} ${s("sarSuffix")}`
+}
+
+function popCartBar () {
+  const btn = document.getElementById("cart-bar-btn")
+  btn.classList.remove("cart-pop")
+  void btn.offsetWidth
+  btn.classList.add("cart-pop")
+  btn.addEventListener("animationend", () => btn.classList.remove("cart-pop"), { once: true })
+}
+
+/* ================================================================
+   CART  – sheet
+================================================================ */
+function openCart () {
+  if (cart.length === 0) return
+  renderCartSheet()
+
+  const sheet = document.getElementById("cart-sheet")
+  sheet.classList.remove("hidden")
+  document.body.style.overflow = "hidden"
+
+  const panel = document.getElementById("cart-sheet-panel")
+  panel.classList.remove("slide-up")
+  void panel.offsetWidth
+  panel.classList.add("slide-up")
+}
+
+function closeCart () {
+  document.getElementById("cart-sheet").classList.add("hidden")
+  document.body.style.overflow = ""
+}
+
+function renderCartSheet () {
+  document.getElementById("cart-title").textContent   = s("cartTitle")
+  document.getElementById("subtotal-label").textContent = s("subtotal")
+  document.getElementById("wa-btn-label").textContent = s("waBtn")
+
+  const total = cart.reduce((sum, l) => sum + l.qty * l.unitPrice, 0)
+  document.getElementById("cart-subtotal").textContent =
+    `${total.toFixed(2)} ${s("sarSuffix")}`
+
+  document.getElementById("cart-items").innerHTML = cart.map(line => `
+    <div class="flex gap-3 bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
+      <div class="flex-1 min-w-0">
+        <!-- name + remove -->
+        <div class="flex items-start justify-between gap-2">
+          <span class="font-semibold text-gray-800 text-sm leading-snug">${line.name}</span>
+          <button
+            onclick="removeCartLine(${line.lineId})"
+            class="text-gray-300 hover:text-red-500 flex-shrink-0 transition-colors"
+            aria-label="Remove"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <!-- extras -->
+        ${line.extras.length
+          ? `<p class="text-xs text-gray-400 mt-0.5">
+               ${line.extras.map(e => e.name).join(" · ")}
+             </p>`
+          : ""}
+        <!-- qty controls + line total -->
+        <div class="flex items-center justify-between mt-2">
+          <div class="flex items-center gap-2">
+            <button
+              onclick="adjustQty(${line.lineId}, -1)"
+              class="w-7 h-7 rounded-full border-2 flex items-center justify-center
+                     text-sm font-bold text-gray-600 active:scale-90 transition-transform"
+              style="border-color:var(--brand)"
+            >−</button>
+            <span class="text-sm font-bold w-5 text-center tabular-nums">${line.qty}</span>
+            <button
+              onclick="adjustQty(${line.lineId}, 1)"
+              class="w-7 h-7 rounded-full flex items-center justify-center
+                     text-sm font-bold text-white active:scale-90 transition-transform"
+              style="background:var(--brand)"
+            >+</button>
+          </div>
+          <span class="font-bold text-sm tabular-nums" style="color:var(--brand)">
+            ${(line.qty * line.unitPrice).toFixed(2)} ${s("sarSuffix")}
+          </span>
+        </div>
+      </div>
+    </div>
+  `).join("")
+}
+
+function removeCartLine (lineId) {
+  cart = cart.filter(l => l.lineId !== lineId)
+  refreshCartBar()
+  if (cart.length === 0) { closeCart(); return }
+  renderCartSheet()
+}
+
+function adjustQty (lineId, delta) {
+  const line = cart.find(l => l.lineId === lineId)
+  if (!line) return
+  line.qty = Math.max(1, line.qty + delta)
+  refreshCartBar()
+  renderCartSheet()
+}
+
+/* ================================================================
+   WHATSAPP CHECKOUT
+================================================================ */
+function sendWhatsApp () {
+  let msg = `${s("waTableLine")} ${tableNo || "-"}\n\n`
+
+  cart.forEach(line => {
+    msg += `• ${line.name}`
+    if (line.extras.length) {
+      msg += ` (${line.extras.map(e => e.name).join(", ")})`
+    }
+    msg += ` × ${line.qty} — ${(line.qty * line.unitPrice).toFixed(2)} ${s("sarSuffix")}\n`
+  })
+
+  const total = cart.reduce((sum, l) => sum + l.qty * l.unitPrice, 0)
+  msg += `\n${s("waTotalLine")}: ${total.toFixed(2)} ${s("sarSuffix")}`
+
+  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, "_blank")
+}
+
+/* ================================================================
+   LANGUAGE TOGGLE
+================================================================ */
+function toggleLang () {
+  lang = lang === "ar" ? "en" : "ar"
+
+  /* swap document direction */
+  document.documentElement.lang = lang
+  document.documentElement.dir  = lang === "ar" ? "rtl" : "ltr"
+
+  /* update toggle button label */
+  document.getElementById("lang-btn").textContent = s("langSwitch")
+
+  /* update table label */
+  document.getElementById("table-label").textContent = s("tableLabel")
+
+  /* re-render everything */
+  renderTabs()
+  renderMenu()
+  refreshCartBar()
+
+  /* re-attach scroll spy after new DOM */
+  setTimeout(setupScrollSpy, 100)
+}
+
+/* ================================================================
+   TOAST
+================================================================ */
+let _toastTimer
+function showToast (msg) {
+  const el = document.getElementById("toast")
+  el.textContent = msg
+  el.classList.remove("hidden")
+  el.classList.add("fade-in")
+  clearTimeout(_toastTimer)
+  _toastTimer = setTimeout(() => el.classList.add("hidden"), 2600)
+}
+
+/* ================================================================
+   BOOT
+================================================================ */
+document.addEventListener("DOMContentLoaded", init)
+</script>
+</body>
+</html>
