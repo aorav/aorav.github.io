@@ -8,8 +8,8 @@
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Supabase (Phase 2) – included now so the variable block is ready -->
-  <!-- <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> -->
+  <!-- Supabase JS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     /* ── Brand variable ───────────────────────────────────────── */
@@ -72,6 +72,59 @@
 
     /* ── Modal backdrop blur ──────────────────────────────────── */
     .backdrop { backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+
+    /* ── Loading spinner ──────────────────────────────────────── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 2.5rem; height: 2.5rem;
+      border: 3px solid #e5e7eb;
+      border-top-color: var(--brand);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+
+    /* ── Admin: toggle switch ─────────────────────────────────── */
+    .toggle-track {
+      width: 2.75rem; height: 1.5rem;
+      background: #d1d5db; border-radius: 9999px;
+      position: relative; cursor: pointer;
+      transition: background .2s;
+      flex-shrink: 0;
+    }
+    .toggle-track.on { background: #22c55e; }
+    .toggle-thumb {
+      position: absolute; top: 2px; left: 2px;
+      width: 1.25rem; height: 1.25rem;
+      background: #fff; border-radius: 9999px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+      transition: transform .2s;
+    }
+    .toggle-track.on .toggle-thumb { transform: translateX(1.25rem); }
+
+    /* ── Admin: form input focus ──────────────────────────────── */
+    .adm-input {
+      width: 100%;
+      border: 1.5px solid #e5e7eb;
+      border-radius: .75rem;
+      padding: .625rem 1rem;
+      font-size: .875rem;
+      color: #111827;
+      outline: none;
+      transition: border-color .15s;
+      background: #fff;
+    }
+    .adm-input:focus { border-color: var(--brand); }
+
+    /* ── Admin: active tab underline ──────────────────────────── */
+    .adm-tab { border-bottom: 2px solid transparent; transition: border-color .2s, color .2s; }
+    .adm-tab.active { border-color: #fff; color: #fff !important; }
+
+    /* ── Admin: section card ──────────────────────────────────── */
+    .adm-card {
+      background: #fff; border-radius: 1rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+      overflow: hidden;
+    }
   </style>
 </head>
 <body class="bg-gray-50 font-sans">
@@ -87,6 +140,7 @@
     <!-- Cover image (~200 px tall) -->
     <div class="relative h-48 overflow-hidden">
       <img
+        id="cover-img"
         src="https://picsum.photos/800/400?random=1"
         alt="cover"
         class="w-full h-full object-cover"
@@ -98,6 +152,7 @@
     <!-- Logo — overlaps the cover image bottom -->
     <div class="flex justify-center -mt-10 relative z-10">
       <img
+        id="logo-img"
         src="https://picsum.photos/80/80?random=77"
         alt="logo"
         class="w-20 h-20 rounded-full border-4 border-white shadow-lg object-cover"
@@ -215,6 +270,29 @@
                      1.087-.902 1.004-1.521-.017-.137-.222-.908-.762-1.178-.46-.228-1.094-.155-1.924
                      -.258-.612-.077-1.009-.635-.943-1.232.108-.934 1.197-1.298 1.742-1.02 1.826.915
                      3.484.07 3.57-1.836-.1-1.199-.225-3.225.304-4.42C7.859 1.07 11.216.793 12.206.793z"/>
+          </svg>
+        </a>
+      </div>
+
+        <!-- TikTok -->
+        <a id="tiktok-link" href="#" aria-label="TikTok"
+           class="text-gray-500 hover:text-gray-900 transition-colors">
+          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0
+                     01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89
+                     c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0
+                     00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0
+                     006.33-6.34V8.69a8.18 8.18 0 004.77 1.52V6.75a4.85 4.85 0
+                     01-1-.06z"/>
+          </svg>
+        </a>
+
+        <!-- Google Maps Review -->
+        <a id="gmaps-link" href="#" aria-label="Google Maps" target="_blank"
+           class="text-gray-500 hover:text-blue-500 transition-colors">
+          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z
+                     M12 11.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/>
           </svg>
         </a>
       </div>
@@ -526,9 +604,410 @@
 <!-- ── /TOAST ─────────────────────────────────────────────────── -->
 
 
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║                  LOADING OVERLAY                        ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<div id="loading-overlay"
+     class="hidden fixed inset-0 z-[200] bg-white
+            flex flex-col items-center justify-center gap-4">
+  <div class="spinner"></div>
+  <p class="text-sm text-gray-400">جاري التحميل…</p>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║                    ADMIN VIEW                           ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<div id="admin-view" class="hidden max-w-lg mx-auto min-h-screen bg-gray-100">
+
+  <!-- ── ADMIN LOGIN ─────────────────────────────────────────── -->
+  <div id="admin-login"
+       class="min-h-screen flex items-center justify-center px-6 py-12">
+    <div class="w-full max-w-sm bg-white rounded-3xl p-8 shadow-xl">
+
+      <!-- Icon + title -->
+      <div class="flex flex-col items-center mb-8">
+        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-3"
+             style="background:var(--brand)">
+          <svg class="w-8 h-8 text-white" fill="none"
+               stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0
+                     00-2-2H6a2 2 0 00-2 2v6a2 2 0 002
+                     2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-900">لوحة التحكم</h2>
+        <p class="text-sm text-gray-400 mt-1">Admin Dashboard</p>
+      </div>
+
+      <!-- Form -->
+      <div class="space-y-3">
+        <input id="adm-username" type="text"
+               placeholder="اسم المستخدم / Username"
+               class="adm-input" autocomplete="username"
+               onkeydown="if(event.key==='Enter')adminLogin()"/>
+        <input id="adm-password" type="password"
+               placeholder="كلمة المرور / Password"
+               class="adm-input" autocomplete="current-password"
+               onkeydown="if(event.key==='Enter')adminLogin()"/>
+        <p id="adm-login-err"
+           class="hidden text-red-500 text-sm text-center pt-1">
+          بيانات خاطئة · Invalid credentials
+        </p>
+        <button onclick="adminLogin()"
+                class="w-full py-3 rounded-2xl text-white font-bold
+                       text-base mt-1 active:scale-95 transition-transform"
+                style="background:var(--brand)">
+          دخول / Login
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- ── /ADMIN LOGIN ────────────────────────────────────────── -->
+
+  <!-- ── ADMIN DASHBOARD ────────────────────────────────────── -->
+  <div id="admin-dashboard" class="hidden flex flex-col min-h-screen">
+
+    <!-- Sticky top bar -->
+    <div class="sticky top-0 z-40" style="background:var(--brand)">
+
+      <!-- Header row -->
+      <div class="flex items-center justify-between px-4 py-3">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 text-white/80" fill="none"
+               stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2
+                     2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0
+                     002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2
+                     2 0 012 2"/>
+          </svg>
+          <span class="text-white font-bold text-base">لوحة التحكم</span>
+        </div>
+        <button onclick="adminLogout()"
+                class="flex items-center gap-1.5 text-white/70
+                       hover:text-white text-sm transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0
+                     01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3
+                     3 0 013 3v1"/>
+          </svg>
+          خروج
+        </button>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="flex border-t border-white/20">
+        <button id="adm-tab-settings"
+                onclick="showAdminTab('settings')"
+                class="adm-tab active flex-1 py-2.5 text-xs font-semibold
+                       text-white/70 text-center">
+          ⚙️ الإعدادات
+        </button>
+        <button id="adm-tab-categories"
+                onclick="showAdminTab('categories')"
+                class="adm-tab flex-1 py-2.5 text-xs font-semibold
+                       text-white/70 text-center">
+          📂 التصنيفات
+        </button>
+        <button id="adm-tab-items"
+                onclick="showAdminTab('items')"
+                class="adm-tab flex-1 py-2.5 text-xs font-semibold
+                       text-white/70 text-center">
+          🍔 الأصناف
+        </button>
+      </div>
+    </div>
+    <!-- /sticky top bar -->
+
+    <!-- ── TAB: SETTINGS ──────────────────────────────────────── -->
+    <div id="adm-panel-settings" class="p-4 space-y-3">
+      <div class="adm-card p-4 space-y-3">
+        <h3 class="font-bold text-gray-700 text-sm mb-1">معلومات المطعم</h3>
+
+        <label class="block text-xs text-gray-500 mb-1">اسم المطعم</label>
+        <input id="s-name" type="text" class="adm-input"
+               placeholder="اسم المطعم"/>
+
+        <label class="block text-xs text-gray-500 mb-1 mt-2">الشعار (AR)</label>
+        <input id="s-tagline-ar" type="text" class="adm-input"
+               placeholder="الشعار بالعربية"/>
+
+        <label class="block text-xs text-gray-500 mb-1 mt-2">Tagline (EN)</label>
+        <input id="s-tagline-en" type="text" class="adm-input"
+               placeholder="Tagline in English"/>
+      </div>
+
+      <div class="adm-card p-4 space-y-3">
+        <h3 class="font-bold text-gray-700 text-sm mb-1">الصور</h3>
+
+        <label class="block text-xs text-gray-500 mb-1">رابط صورة الغلاف</label>
+        <input id="s-cover" type="url" class="adm-input"
+               placeholder="https://…"/>
+
+        <label class="block text-xs text-gray-500 mb-1 mt-2">رابط الشعار (Logo)</label>
+        <input id="s-logo" type="url" class="adm-input"
+               placeholder="https://…"/>
+      </div>
+
+      <div class="adm-card p-4 space-y-3">
+        <h3 class="font-bold text-gray-700 text-sm mb-1">لون العلامة التجارية</h3>
+        <div class="flex items-center gap-3">
+          <input id="s-color" type="color" value="#8B0000"
+                 class="w-12 h-10 rounded-lg border border-gray-200
+                        cursor-pointer p-0.5"/>
+          <span id="s-color-hex"
+                class="text-sm font-mono text-gray-500">#8B0000</span>
+        </div>
+      </div>
+
+      <div class="adm-card p-4 space-y-3">
+        <h3 class="font-bold text-gray-700 text-sm mb-1">وسائل التواصل الاجتماعي</h3>
+
+        <label class="block text-xs text-gray-500 mb-1">
+          Instagram — رابط الصفحة
+        </label>
+        <input id="s-ig" type="url" class="adm-input"
+               placeholder="https://instagram.com/…"/>
+
+        <label class="block text-xs text-gray-500 mb-1 mt-2">
+          WhatsApp — رقم الهاتف (مع رمز الدولة)
+        </label>
+        <input id="s-wa" type="text" class="adm-input"
+               placeholder="966500000000"/>
+
+        <label class="block text-xs text-gray-500 mb-1 mt-2">
+          Snapchat — رابط الصفحة
+        </label>
+        <input id="s-sc" type="url" class="adm-input"
+               placeholder="https://snapchat.com/add/…"/>
+
+        <label class="block text-xs text-gray-500 mb-1 mt-2">
+          TikTok — رابط الصفحة
+        </label>
+        <input id="s-tt" type="url" class="adm-input"
+               placeholder="https://tiktok.com/@…"/>
+      </div>
+
+      <div class="adm-card p-4 space-y-3">
+        <h3 class="font-bold text-gray-700 text-sm mb-1">
+          رابط تقييم Google Maps
+        </h3>
+        <label class="block text-xs text-gray-500 mb-1">
+          الرابط المباشر لصفحة التقييم
+        </label>
+        <input id="s-gmaps" type="url" class="adm-input"
+               placeholder="https://g.page/r/…/review"/>
+      </div>
+
+      <button onclick="saveSettings()"
+              class="w-full py-3.5 rounded-2xl text-white font-bold
+                     text-base active:scale-95 transition-transform shadow-md"
+              style="background:var(--brand)">
+        💾 حفظ الإعدادات
+      </button>
+    </div>
+    <!-- /TAB SETTINGS -->
+
+    <!-- ── TAB: CATEGORIES ─────────────────────────────────────── -->
+    <div id="adm-panel-categories" class="hidden p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-bold text-gray-700">التصنيفات</h3>
+        <button onclick="openCatModal()"
+                class="text-xs text-white px-4 py-2 rounded-xl font-bold
+                       active:scale-95 transition-transform"
+                style="background:var(--brand)">
+          + إضافة تصنيف
+        </button>
+      </div>
+      <div id="adm-cat-list" class="space-y-2">
+        <!-- rendered by JS -->
+      </div>
+    </div>
+    <!-- /TAB CATEGORIES -->
+
+    <!-- ── TAB: ITEMS ──────────────────────────────────────────── -->
+    <div id="adm-panel-items" class="hidden p-4">
+      <!-- Category filter -->
+      <select id="adm-item-cat-filter"
+              onchange="renderAdminItems()"
+              class="adm-input mb-3">
+        <option value="">— اختر تصنيفاً —</option>
+      </select>
+
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-bold text-gray-700">الأصناف</h3>
+        <button onclick="openItemModal_admin()"
+                class="text-xs text-white px-4 py-2 rounded-xl font-bold
+                       active:scale-95 transition-transform"
+                style="background:var(--brand)">
+          + إضافة صنف
+        </button>
+      </div>
+      <div id="adm-item-list" class="space-y-2">
+        <!-- rendered by JS -->
+      </div>
+    </div>
+    <!-- /TAB ITEMS -->
+
+  </div><!-- /admin-dashboard -->
+</div><!-- /admin-view -->
+
+
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║             ADMIN: CATEGORY FORM MODAL                  ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<div id="cat-modal"
+     class="hidden fixed inset-0 z-50 flex items-end justify-center">
+  <div class="absolute inset-0 bg-black/60 backdrop"
+       onclick="closeCatModal()"></div>
+  <div class="relative w-full max-w-lg bg-white rounded-t-3xl
+              p-5 slide-up max-h-[90vh] overflow-y-auto">
+
+    <h3 id="cat-modal-title"
+        class="text-xl font-bold text-gray-900 mb-5">إضافة تصنيف</h3>
+
+    <div class="space-y-3">
+      <input id="cf-name-ar" type="text" class="adm-input"
+             placeholder="اسم التصنيف بالعربية *"/>
+      <input id="cf-name-en" type="text" class="adm-input"
+             placeholder="Category name in English *"/>
+      <textarea id="cf-desc-ar" rows="2" class="adm-input resize-none"
+                placeholder="وصف التصنيف (عربي)"></textarea>
+      <textarea id="cf-desc-en" rows="2" class="adm-input resize-none"
+                placeholder="Category description (English)"></textarea>
+      <input id="cf-sort" type="number" class="adm-input"
+             placeholder="ترتيب العرض (رقم)"/>
+    </div>
+
+    <input type="hidden" id="cf-editing-id"/>
+
+    <div class="flex gap-3 mt-5">
+      <button onclick="closeCatModal()"
+              class="flex-1 py-3 rounded-2xl border-2 border-gray-200
+                     text-gray-700 font-semibold active:scale-95 transition-transform">
+        إلغاء
+      </button>
+      <button onclick="saveCat()"
+              class="flex-1 py-3 rounded-2xl text-white font-bold
+                     active:scale-95 transition-transform"
+              style="background:var(--brand)">
+        حفظ
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║              ADMIN: ITEM FORM MODAL                     ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<div id="item-adm-modal"
+     class="hidden fixed inset-0 z-50 flex items-end justify-center">
+  <div class="absolute inset-0 bg-black/60 backdrop"
+       onclick="closeItemAdmModal()"></div>
+  <div class="relative w-full max-w-lg bg-white rounded-t-3xl
+              p-5 slide-up max-h-[92vh] overflow-y-auto">
+
+    <h3 id="item-adm-modal-title"
+        class="text-xl font-bold text-gray-900 mb-5">إضافة صنف</h3>
+
+    <div class="space-y-3">
+
+      <!-- Category -->
+      <select id="if-cat-id" class="adm-input">
+        <option value="">اختر التصنيف *</option>
+      </select>
+
+      <!-- Names -->
+      <input id="if-name-ar" type="text" class="adm-input"
+             placeholder="اسم الصنف بالعربية *"/>
+      <input id="if-name-en" type="text" class="adm-input"
+             placeholder="Item name in English *"/>
+
+      <!-- Descriptions -->
+      <textarea id="if-desc-ar" rows="2" class="adm-input resize-none"
+                placeholder="وصف الصنف (عربي)"></textarea>
+      <textarea id="if-desc-en" rows="2" class="adm-input resize-none"
+                placeholder="Item description (English)"></textarea>
+
+      <!-- Price + Sort -->
+      <div class="flex gap-2">
+        <input id="if-price" type="number" step="0.5" min="0"
+               class="adm-input flex-1" placeholder="السعر (ريال) *"/>
+        <input id="if-sort" type="number"
+               class="adm-input w-28" placeholder="الترتيب"/>
+      </div>
+
+      <!-- Image URL -->
+      <input id="if-image" type="url" class="adm-input"
+             placeholder="رابط الصورة (imgbb أو أي رابط)"/>
+
+      <!-- Available toggle -->
+      <div class="flex items-center justify-between py-1">
+        <span class="text-sm font-semibold text-gray-700">متاح للطلب</span>
+        <div id="if-avail-toggle"
+             class="toggle-track on"
+             onclick="this.classList.toggle('on')"
+             role="switch" aria-checked="true">
+          <div class="toggle-thumb"></div>
+        </div>
+      </div>
+
+      <!-- Allergens -->
+      <div>
+        <p class="text-xs font-semibold text-gray-500 mb-2">
+          مسببات الحساسية
+        </p>
+        <div class="grid grid-cols-4 gap-2" id="if-allergens">
+          <!-- rendered by JS -->
+        </div>
+      </div>
+
+      <!-- ── Customizations builder ── -->
+      <div class="border-t pt-4">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-sm font-bold text-gray-700">خيارات التخصيص</p>
+          <button type="button" onclick="addCustBuilderGroup()"
+                  class="text-xs text-white px-3 py-1.5 rounded-xl font-semibold"
+                  style="background:var(--brand)">
+            + مجموعة
+          </button>
+        </div>
+        <div id="cust-builder" class="space-y-3">
+          <!-- groups rendered by JS -->
+        </div>
+      </div>
+
+    </div><!-- /space-y-3 -->
+
+    <input type="hidden" id="if-editing-id"/>
+
+    <div class="flex gap-3 mt-5">
+      <button onclick="closeItemAdmModal()"
+              class="flex-1 py-3 rounded-2xl border-2 border-gray-200
+                     text-gray-700 font-semibold active:scale-95 transition-transform">
+        إلغاء
+      </button>
+      <button onclick="saveItem_admin()"
+              class="flex-1 py-3 rounded-2xl text-white font-bold
+                     active:scale-95 transition-transform"
+              style="background:var(--brand)">
+        حفظ
+      </button>
+    </div>
+  </div>
+</div>
+
+
 <script>
 /* ================================================================
-   CONFIG
+   CONFIG  (constants — never changed at runtime)
 ================================================================ */
 const BRAND_COLOR     = "#8B0000"
 const SUPABASE_URL    = "https://giiylicbqxqqiqwhjovr.supabase.co"
@@ -536,6 +1015,21 @@ const SUPABASE_KEY    = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 const WHATSAPP_NUMBER = "966500000000"
 const ADMIN_USER      = "admin"
 const ADMIN_PASS      = "1234"
+
+/* ================================================================
+   SUPABASE CLIENT
+================================================================ */
+const { createClient } = supabase
+const db = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+/* ================================================================
+   LIVE DATA  (populated from Supabase; fallback = hardcoded below)
+================================================================ */
+let liveCategories     = []
+let liveItems          = []
+let liveCustomizations = []
+let liveSettings       = {}
+let waNumber           = WHATSAPP_NUMBER   // overridden by settings
 
 /* ================================================================
    I18N STRINGS
@@ -743,18 +1237,35 @@ let modalCustom = {}          // { custId: [ selectedOptionIdx, … ] }
 const s = k => STR[lang][k]
 
 /* ================================================================
-   INIT
+   INIT  — routes between customer view and admin panel
 ================================================================ */
-function init () {
+async function init () {
   const params = new URLSearchParams(location.search)
-  tableNo = params.get("table")
 
+  /* ── Admin route ── */
+  if (params.get("admin") === "1") {
+    document.getElementById("customer-view").classList.add("hidden")
+    document.getElementById("admin-view").classList.remove("hidden")
+    initAdminPanel()
+    return
+  }
+
+  /* ── Customer route ── */
+  tableNo = params.get("table")
   if (tableNo) {
     document.getElementById("table-badge").classList.replace("hidden","flex")
     document.getElementById("table-number").textContent = tableNo
   }
 
-  document.getElementById("header-wa").href = `https://wa.me/${WHATSAPP_NUMBER}`
+  /* Show loading spinner */
+  document.getElementById("loading-overlay").classList.remove("hidden")
+
+  await loadFromSupabase()          // sets liveCategories / liveItems / etc.
+
+  /* Hide loading spinner */
+  document.getElementById("loading-overlay").classList.add("hidden")
+
+  applySettings()
 
   renderTabs()
   renderMenu()
@@ -762,11 +1273,109 @@ function init () {
 }
 
 /* ================================================================
+   LOAD FROM SUPABASE  (falls back to hardcoded data on error)
+================================================================ */
+async function loadFromSupabase () {
+  try {
+    const [setRes, catRes, itmRes, cusRes] = await Promise.all([
+      db.from("settings").select("*"),
+      db.from("categories").select("*").order("sort_order"),
+      db.from("items").select("*").order("sort_order"),
+      db.from("customizations").select("*"),
+    ])
+
+    /* settings → key/value map */
+    if (setRes.data && setRes.data.length > 0) {
+      liveSettings = Object.fromEntries(setRes.data.map(r => [r.key, r.value]))
+    }
+
+    /* categories – normalise description_ar/en → desc_ar/en for renderer */
+    if (catRes.data && catRes.data.length > 0) {
+      liveCategories = catRes.data.map(c => ({
+        ...c,
+        desc_ar : c.description_ar || "",
+        desc_en : c.description_en || "",
+      }))
+    } else {
+      liveCategories = CATEGORIES.slice()  // fallback
+    }
+
+    /* items */
+    if (itmRes.data && itmRes.data.length > 0) {
+      liveItems = itmRes.data.map(i => ({
+        ...i,
+        desc_ar : i.description_ar || "",
+        desc_en : i.description_en || "",
+      }))
+    } else {
+      liveItems = ITEMS.slice()            // fallback
+    }
+
+    /* customizations */
+    if (cusRes.data) {
+      liveCustomizations = cusRes.data
+    } else {
+      liveCustomizations = CUSTOMIZATIONS.slice()
+    }
+
+  } catch (err) {
+    console.warn("Supabase unavailable – using hardcoded data:", err)
+    liveCategories     = CATEGORIES.slice()
+    liveItems          = ITEMS.slice()
+    liveCustomizations = CUSTOMIZATIONS.slice()
+  }
+}
+
+/* ================================================================
+   APPLY SETTINGS  — pushes settings values into the customer DOM
+================================================================ */
+function applySettings () {
+  const cfg = liveSettings
+
+  if (cfg.brand_color) {
+    document.documentElement.style.setProperty("--brand", cfg.brand_color)
+  }
+  if (cfg.restaurant_name) {
+    document.getElementById("restaurant-name").textContent = cfg.restaurant_name
+  }
+  if (cfg.restaurant_tagline_ar || cfg.restaurant_tagline_en) {
+    const tl = lang === "ar"
+      ? (cfg.restaurant_tagline_ar || cfg.restaurant_tagline_en)
+      : (cfg.restaurant_tagline_en || cfg.restaurant_tagline_ar)
+    document.getElementById("restaurant-tagline").textContent = tl
+  }
+  const coverEl = document.getElementById("cover-img")
+  if (coverEl && cfg.cover_url) coverEl.src = cfg.cover_url
+
+  const logoEl  = document.getElementById("logo-img")
+  if (logoEl  && cfg.logo_url)  logoEl.src  = cfg.logo_url
+
+  const igEl = document.querySelector("a[aria-label='Instagram']")
+  if (igEl && cfg.instagram_url) igEl.href = cfg.instagram_url
+
+  if (cfg.whatsapp_number) {
+    waNumber = cfg.whatsapp_number
+    document.getElementById("header-wa").href = `https://wa.me/${waNumber}`
+  } else {
+    document.getElementById("header-wa").href = `https://wa.me/${waNumber}`
+  }
+
+  const scEl = document.querySelector("a[aria-label='Snapchat']")
+  if (scEl && cfg.snapchat_url) scEl.href = cfg.snapchat_url
+
+  const ttEl = document.getElementById("tiktok-link")
+  if (ttEl && cfg.tiktok_url) ttEl.href = cfg.tiktok_url
+
+  const gmEl = document.getElementById("gmaps-link")
+  if (gmEl && cfg.gmaps_url) gmEl.href = cfg.gmaps_url
+}
+
+/* ================================================================
    RENDER – CATEGORY TABS
 ================================================================ */
 function renderTabs () {
   const nav = document.getElementById("category-tabs")
-  nav.innerHTML = CATEGORIES
+  nav.innerHTML = liveCategories
     .slice()
     .sort((a,b) => a.sort_order - b.sort_order)
     .map((cat, i) => `
@@ -785,11 +1394,11 @@ function renderTabs () {
 ================================================================ */
 function renderMenu () {
   const main = document.getElementById("menu-content")
-  main.innerHTML = CATEGORIES
+  main.innerHTML = liveCategories
     .slice()
     .sort((a,b) => a.sort_order - b.sort_order)
     .map(cat => {
-      const catItems = ITEMS
+      const catItems = liveItems
         .filter(it => it.category_id === cat.id)
         .sort((a,b) => a.sort_order - b.sort_order)
 
@@ -906,7 +1515,7 @@ function highlightTab (catId) {
    ITEM MODAL  – open
 ================================================================ */
 function openItemModal (itemId) {
-  activeItem  = ITEMS.find(it => it.id === itemId)
+  activeItem  = liveItems.find(it => it.id === itemId)
   if (!activeItem) return
 
   modalQty    = 1
@@ -957,7 +1566,7 @@ function openItemModal (itemId) {
 ================================================================ */
 function renderModalCustomizations (itemId) {
   const container = document.getElementById("modal-customizations")
-  const groups    = CUSTOMIZATIONS.filter(c => c.item_id === itemId)
+  const groups    = liveCustomizations.filter(c => c.item_id === itemId)
 
   container.innerHTML = groups.map(group => {
     const gName = lang === "ar" ? group.name_ar : group.name_en
@@ -1257,7 +1866,7 @@ function sendWhatsApp () {
   const total = cart.reduce((sum, l) => sum + l.qty * l.unitPrice, 0)
   msg += `\n${s("waTotalLine")}: ${total.toFixed(2)} ${s("sarSuffix")}`
 
-  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, "_blank")
+  window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, "_blank")
 }
 
 /* ================================================================
@@ -1296,6 +1905,589 @@ function showToast (msg) {
   el.classList.add("fade-in")
   clearTimeout(_toastTimer)
   _toastTimer = setTimeout(() => el.classList.add("hidden"), 2600)
+}
+
+/* ================================================================
+   ADMIN STATE
+================================================================ */
+let adminLoggedIn  = false
+let admEditCatId   = null    // null = adding new
+let admEditItemId  = null
+let custBuilder    = []      // array of customization group objects for the item form
+
+/* ================================================================
+   ADMIN PANEL INIT  (called when ?admin=1)
+================================================================ */
+function initAdminPanel () {
+  renderAllergenCheckboxes()
+}
+
+/* ================================================================
+   ADMIN AUTH
+================================================================ */
+function adminLogin () {
+  const u = document.getElementById("adm-username").value.trim()
+  const p = document.getElementById("adm-password").value
+  if (u === ADMIN_USER && p === ADMIN_PASS) {
+    adminLoggedIn = true
+    document.getElementById("admin-login").classList.add("hidden")
+    document.getElementById("admin-dashboard").classList.remove("hidden")
+    loadAdminData()
+  } else {
+    document.getElementById("adm-login-err").classList.remove("hidden")
+  }
+}
+
+function adminLogout () {
+  adminLoggedIn = false
+  document.getElementById("admin-dashboard").classList.add("hidden")
+  document.getElementById("admin-login").classList.remove("hidden")
+  document.getElementById("adm-username").value = ""
+  document.getElementById("adm-password").value = ""
+}
+
+/* ================================================================
+   ADMIN: TAB SWITCHING
+================================================================ */
+function showAdminTab (tab) {
+  ["settings","categories","items"].forEach(t => {
+    document.getElementById(`adm-panel-${t}`).classList.toggle("hidden", t !== tab)
+    const btn = document.getElementById(`adm-tab-${t}`)
+    btn.classList.toggle("active", t === tab)
+    btn.style.color = t === tab ? "#fff" : "rgba(255,255,255,0.6)"
+  })
+  if (tab === "items") renderAdminItems()
+}
+
+/* ================================================================
+   ADMIN: LOAD ALL DATA FROM SUPABASE
+================================================================ */
+async function loadAdminData () {
+  try {
+    const [setRes, catRes, itmRes, cusRes] = await Promise.all([
+      db.from("settings").select("*"),
+      db.from("categories").select("*").order("sort_order"),
+      db.from("items").select("*").order("sort_order"),
+      db.from("customizations").select("*"),
+    ])
+    if (setRes.data)  liveSettings       = Object.fromEntries(setRes.data.map(r=>[r.key,r.value]))
+    if (catRes.data)  liveCategories     = catRes.data.map(c=>({...c,desc_ar:c.description_ar||"",desc_en:c.description_en||""}))
+    if (itmRes.data)  liveItems          = itmRes.data.map(i=>({...i,desc_ar:i.description_ar||"",desc_en:i.description_en||""}))
+    if (cusRes.data)  liveCustomizations = cusRes.data
+  } catch(e) { showToast("خطأ في تحميل البيانات") }
+
+  populateSettingsForm()
+  renderAdminCategories()
+  populateCatSelects()
+}
+
+/* ================================================================
+   ADMIN: SETTINGS
+================================================================ */
+function populateSettingsForm () {
+  const g = k => liveSettings[k] || ""
+  document.getElementById("s-name").value       = g("restaurant_name")
+  document.getElementById("s-tagline-ar").value = g("restaurant_tagline_ar")
+  document.getElementById("s-tagline-en").value = g("restaurant_tagline_en")
+  document.getElementById("s-cover").value      = g("cover_url")
+  document.getElementById("s-logo").value       = g("logo_url")
+  document.getElementById("s-color").value      = g("brand_color") || BRAND_COLOR
+  document.getElementById("s-color-hex").textContent = g("brand_color") || BRAND_COLOR
+  document.getElementById("s-ig").value         = g("instagram_url")
+  document.getElementById("s-wa").value         = g("whatsapp_number")
+  document.getElementById("s-sc").value         = g("snapchat_url")
+  document.getElementById("s-tt").value         = g("tiktok_url")
+  document.getElementById("s-gmaps").value      = g("gmaps_url")
+
+  /* live colour preview */
+  document.getElementById("s-color").addEventListener("input", e => {
+    document.documentElement.style.setProperty("--brand", e.target.value)
+    document.getElementById("s-color-hex").textContent = e.target.value
+  })
+}
+
+async function saveSettings () {
+  const rows = [
+    { key:"restaurant_name",       value: document.getElementById("s-name").value.trim() },
+    { key:"restaurant_tagline_ar", value: document.getElementById("s-tagline-ar").value.trim() },
+    { key:"restaurant_tagline_en", value: document.getElementById("s-tagline-en").value.trim() },
+    { key:"cover_url",             value: document.getElementById("s-cover").value.trim() },
+    { key:"logo_url",              value: document.getElementById("s-logo").value.trim() },
+    { key:"brand_color",           value: document.getElementById("s-color").value },
+    { key:"instagram_url",         value: document.getElementById("s-ig").value.trim() },
+    { key:"whatsapp_number",       value: document.getElementById("s-wa").value.trim() },
+    { key:"snapchat_url",          value: document.getElementById("s-sc").value.trim() },
+    { key:"tiktok_url",            value: document.getElementById("s-tt").value.trim() },
+    { key:"gmaps_url",             value: document.getElementById("s-gmaps").value.trim() },
+  ]
+  const { error } = await db.from("settings").upsert(rows, { onConflict: "key" })
+  if (error) { showToast("❌ خطأ في الحفظ"); return }
+  rows.forEach(r => { liveSettings[r.key] = r.value })
+  showToast("✓ تم حفظ الإعدادات")
+}
+
+/* ================================================================
+   ADMIN: CATEGORIES — render list
+================================================================ */
+function renderAdminCategories () {
+  const list = document.getElementById("adm-cat-list")
+  const sorted = liveCategories.slice().sort((a,b)=>a.sort_order-b.sort_order)
+  if (!sorted.length) {
+    list.innerHTML = `<p class="text-center text-gray-400 text-sm py-6">لا توجد تصنيفات بعد</p>`
+    return
+  }
+  list.innerHTML = sorted.map((cat, idx) => `
+    <div class="adm-card flex items-center gap-3 px-4 py-3">
+      <!-- reorder -->
+      <div class="flex flex-col gap-0.5">
+        <button onclick="reorderCat(${cat.id},-1)"
+                class="text-gray-400 hover:text-gray-700 disabled:opacity-30 text-xs leading-none"
+                ${idx===0?"disabled":""}>▲</button>
+        <button onclick="reorderCat(${cat.id},1)"
+                class="text-gray-400 hover:text-gray-700 disabled:opacity-30 text-xs leading-none"
+                ${idx===sorted.length-1?"disabled":""}>▼</button>
+      </div>
+      <!-- info -->
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-gray-800 text-sm">${cat.name_ar}</p>
+        <p class="text-xs text-gray-400">${cat.name_en}</p>
+      </div>
+      <!-- actions -->
+      <button onclick="openCatModal(${cat.id})"
+              class="p-2 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5
+                   m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+      </button>
+      <button onclick="deleteCat(${cat.id})"
+              class="p-2 rounded-xl bg-red-50 text-red-500 hover:bg-red-100">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0
+                   01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1
+                   1 0 00-1 1v3M4 7h16"/>
+        </svg>
+      </button>
+    </div>
+  `).join("")
+}
+
+/* ================================================================
+   ADMIN: CATEGORIES — reorder
+================================================================ */
+async function reorderCat (catId, dir) {
+  const sorted = liveCategories.slice().sort((a,b)=>a.sort_order-b.sort_order)
+  const idx    = sorted.findIndex(c=>c.id===catId)
+  const swap   = sorted[idx + dir]
+  if (!swap) return
+
+  const myOrder   = sorted[idx].sort_order
+  const swapOrder = swap.sort_order
+
+  await Promise.all([
+    db.from("categories").update({sort_order: swapOrder}).eq("id", catId),
+    db.from("categories").update({sort_order: myOrder  }).eq("id", swap.id),
+  ])
+  sorted[idx].sort_order   = swapOrder
+  swap.sort_order          = myOrder
+  liveCategories = sorted
+  renderAdminCategories()
+}
+
+/* ================================================================
+   ADMIN: CATEGORIES — modal open/close/save/delete
+================================================================ */
+function openCatModal (catId = null) {
+  admEditCatId = catId
+  if (catId) {
+    const cat = liveCategories.find(c=>c.id===catId)
+    document.getElementById("cat-modal-title").textContent = "تعديل تصنيف"
+    document.getElementById("cf-name-ar").value = cat.name_ar || ""
+    document.getElementById("cf-name-en").value = cat.name_en || ""
+    document.getElementById("cf-desc-ar").value = cat.description_ar || cat.desc_ar || ""
+    document.getElementById("cf-desc-en").value = cat.description_en || cat.desc_en || ""
+    document.getElementById("cf-sort").value    = cat.sort_order || ""
+  } else {
+    document.getElementById("cat-modal-title").textContent = "إضافة تصنيف"
+    ;["cf-name-ar","cf-name-en","cf-desc-ar","cf-desc-en","cf-sort"]
+      .forEach(id => document.getElementById(id).value = "")
+  }
+  document.getElementById("cat-modal").classList.remove("hidden")
+  document.body.style.overflow = "hidden"
+}
+
+function closeCatModal () {
+  document.getElementById("cat-modal").classList.add("hidden")
+  document.body.style.overflow = ""
+}
+
+async function saveCat () {
+  const nameAr = document.getElementById("cf-name-ar").value.trim()
+  const nameEn = document.getElementById("cf-name-en").value.trim()
+  if (!nameAr || !nameEn) { showToast("الاسم بالعربية والإنجليزية مطلوب"); return }
+
+  const data = {
+    name_ar       : nameAr,
+    name_en       : nameEn,
+    description_ar: document.getElementById("cf-desc-ar").value.trim(),
+    description_en: document.getElementById("cf-desc-en").value.trim(),
+    sort_order    : parseInt(document.getElementById("cf-sort").value) || 0,
+  }
+
+  if (admEditCatId) {
+    const { error } = await db.from("categories").update(data).eq("id", admEditCatId)
+    if (error) { showToast("❌ خطأ في التحديث"); return }
+  } else {
+    const { error } = await db.from("categories").insert(data)
+    if (error) { showToast("❌ خطأ في الإضافة"); return }
+  }
+  closeCatModal()
+  await loadAdminData()
+  showToast("✓ تم الحفظ")
+}
+
+async function deleteCat (catId) {
+  if (!confirm("حذف هذا التصنيف وجميع أصنافه؟")) return
+  await db.from("items").delete().eq("category_id", catId)
+  await db.from("categories").delete().eq("id", catId)
+  liveCategories = liveCategories.filter(c=>c.id!==catId)
+  liveItems      = liveItems.filter(i=>i.category_id!==catId)
+  renderAdminCategories()
+  populateCatSelects()
+  showToast("✓ تم الحذف")
+}
+
+/* ================================================================
+   ADMIN: ITEMS — helpers
+================================================================ */
+function populateCatSelects () {
+  const opts = liveCategories
+    .slice().sort((a,b)=>a.sort_order-b.sort_order)
+    .map(c=>`<option value="${c.id}">${c.name_ar} / ${c.name_en}</option>`)
+    .join("")
+  document.getElementById("adm-item-cat-filter").innerHTML =
+    `<option value="">— اختر تصنيفاً —</option>${opts}`
+  document.getElementById("if-cat-id").innerHTML =
+    `<option value="">اختر التصنيف *</option>${opts}`
+}
+
+function renderAllergenCheckboxes () {
+  document.getElementById("if-allergens").innerHTML =
+    Object.entries(ALLERGENS).map(([key,a])=>`
+      <label class="flex flex-col items-center gap-1 p-2 rounded-xl border
+                     border-gray-200 cursor-pointer hover:bg-gray-50 text-xs text-center">
+        <input type="checkbox" name="allergen" value="${key}"
+               class="w-4 h-4" style="accent-color:var(--brand)"/>
+        <span>${a.emoji}</span>
+        <span class="leading-tight">${a.ar}</span>
+      </label>
+    `).join("")
+}
+
+/* ================================================================
+   ADMIN: ITEMS — render list
+================================================================ */
+function renderAdminItems () {
+  const catId = document.getElementById("adm-item-cat-filter").value
+  const list  = document.getElementById("adm-item-list")
+  if (!catId) {
+    list.innerHTML = `<p class="text-center text-gray-400 text-sm py-6">اختر تصنيفاً</p>`
+    return
+  }
+  const filtered = liveItems.filter(i=>String(i.category_id)===String(catId))
+    .sort((a,b)=>a.sort_order-b.sort_order)
+  if (!filtered.length) {
+    list.innerHTML = `<p class="text-center text-gray-400 text-sm py-6">لا توجد أصناف</p>`
+    return
+  }
+  list.innerHTML = filtered.map(item=>`
+    <div class="adm-card flex items-center gap-3 px-3 py-3">
+      <img src="${item.image_url||`https://picsum.photos/60/60?random=${item.id}`}"
+           class="w-12 h-12 rounded-xl object-cover flex-shrink-0"
+           onerror="this.src='https://picsum.photos/60/60?random=${item.id+5}'"/>
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-gray-800 text-sm leading-tight">${item.name_ar}</p>
+        <p class="text-xs text-gray-400">${item.price} ريال</p>
+      </div>
+      <!-- availability toggle -->
+      <div class="toggle-track ${item.available!==false?"on":""}"
+           onclick="toggleAvailability(${item.id},${!(item.available!==false)})"
+           title="${item.available!==false?"متاح":"غير متاح"}">
+        <div class="toggle-thumb"></div>
+      </div>
+      <!-- edit -->
+      <button onclick="openItemModal_admin(${item.id})"
+              class="p-2 rounded-xl bg-blue-50 text-blue-600">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5
+                   m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+      </button>
+      <!-- delete -->
+      <button onclick="deleteItem_admin(${item.id})"
+              class="p-2 rounded-xl bg-red-50 text-red-500">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0
+                   01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1
+                   1 0 00-1 1v3M4 7h16"/>
+        </svg>
+      </button>
+    </div>
+  `).join("")
+}
+
+/* ================================================================
+   ADMIN: ITEMS — availability toggle
+================================================================ */
+async function toggleAvailability (itemId, newVal) {
+  const { error } = await db.from("items")
+    .update({ available: newVal }).eq("id", itemId)
+  if (error) { showToast("❌ خطأ"); return }
+  const it = liveItems.find(i=>i.id===itemId)
+  if (it) it.available = newVal
+  renderAdminItems()
+  showToast(newVal ? "✓ تم التفعيل" : "✓ تم الإيقاف")
+}
+
+/* ================================================================
+   ADMIN: ITEMS — modal open/close
+================================================================ */
+async function openItemModal_admin (itemId = null) {
+  admEditItemId = itemId
+  custBuilder   = []
+  document.getElementById("cust-builder").innerHTML = ""
+
+  if (itemId) {
+    const item = liveItems.find(i=>i.id===itemId)
+    document.getElementById("item-adm-modal-title").textContent = "تعديل صنف"
+    document.getElementById("if-cat-id").value   = item.category_id || ""
+    document.getElementById("if-name-ar").value  = item.name_ar || ""
+    document.getElementById("if-name-en").value  = item.name_en || ""
+    document.getElementById("if-desc-ar").value  = item.description_ar || item.desc_ar || ""
+    document.getElementById("if-desc-en").value  = item.description_en || item.desc_en || ""
+    document.getElementById("if-price").value    = item.price || ""
+    document.getElementById("if-sort").value     = item.sort_order || ""
+    document.getElementById("if-image").value    = item.image_url || ""
+    const tog = document.getElementById("if-avail-toggle")
+    item.available!==false ? tog.classList.add("on") : tog.classList.remove("on")
+    /* allergens */
+    document.querySelectorAll("input[name='allergen']").forEach(cb=>{
+      cb.checked = (item.allergens||[]).includes(cb.value)
+    })
+    /* load existing customizations */
+    const existing = liveCustomizations.filter(c=>c.item_id===itemId)
+    existing.forEach(c => addCustBuilderGroup(c))
+  } else {
+    document.getElementById("item-adm-modal-title").textContent = "إضافة صنف"
+    ;["if-name-ar","if-name-en","if-desc-ar","if-desc-en","if-price","if-sort","if-image"]
+      .forEach(id => document.getElementById(id).value = "")
+    document.getElementById("if-cat-id").value = ""
+    document.getElementById("if-avail-toggle").classList.add("on")
+    document.querySelectorAll("input[name='allergen']").forEach(cb=>cb.checked=false)
+  }
+
+  document.getElementById("item-adm-modal").classList.remove("hidden")
+  document.body.style.overflow = "hidden"
+}
+
+function closeItemAdmModal () {
+  document.getElementById("item-adm-modal").classList.add("hidden")
+  document.body.style.overflow = ""
+}
+
+/* ================================================================
+   ADMIN: ITEMS — save
+================================================================ */
+async function saveItem_admin () {
+  const nameAr = document.getElementById("if-name-ar").value.trim()
+  const nameEn = document.getElementById("if-name-en").value.trim()
+  const price  = parseFloat(document.getElementById("if-price").value)
+  const catId  = document.getElementById("if-cat-id").value
+
+  if (!nameAr || !nameEn || isNaN(price) || !catId) {
+    showToast("يرجى تعبئة الحقول المطلوبة *"); return
+  }
+
+  const allergens = [...document.querySelectorAll("input[name='allergen']:checked")]
+    .map(cb=>cb.value)
+  const available = document.getElementById("if-avail-toggle").classList.contains("on")
+
+  const data = {
+    category_id   : parseInt(catId),
+    name_ar       : nameAr,
+    name_en       : nameEn,
+    description_ar: document.getElementById("if-desc-ar").value.trim(),
+    description_en: document.getElementById("if-desc-en").value.trim(),
+    price,
+    image_url     : document.getElementById("if-image").value.trim() || null,
+    allergens,
+    available,
+    sort_order    : parseInt(document.getElementById("if-sort").value) || 0,
+  }
+
+  let savedId = admEditItemId
+  if (admEditItemId) {
+    const { error } = await db.from("items").update(data).eq("id", admEditItemId)
+    if (error) { showToast("❌ خطأ في التحديث"); return }
+  } else {
+    const { data: rows, error } = await db.from("items").insert(data).select()
+    if (error) { showToast("❌ خطأ في الإضافة"); return }
+    savedId = rows[0].id
+  }
+
+  /* customizations: delete then re-insert */
+  await db.from("customizations").delete().eq("item_id", savedId)
+  const groups = collectCustBuilder()
+  for (const grp of groups) {
+    if (grp.options.length === 0) continue
+    await db.from("customizations").insert({
+      item_id : savedId,
+      name_ar : grp.name_ar,
+      name_en : grp.name_en,
+      type    : grp.type,
+      options : grp.options,
+    })
+  }
+
+  closeItemAdmModal()
+  await loadAdminData()
+  renderAdminItems()
+  showToast("✓ تم الحفظ")
+}
+
+/* ================================================================
+   ADMIN: ITEMS — delete
+================================================================ */
+async function deleteItem_admin (itemId) {
+  if (!confirm("حذف هذا الصنف؟")) return
+  await db.from("customizations").delete().eq("item_id", itemId)
+  await db.from("items").delete().eq("id", itemId)
+  liveItems          = liveItems.filter(i=>i.id!==itemId)
+  liveCustomizations = liveCustomizations.filter(c=>c.item_id!==itemId)
+  renderAdminItems()
+  showToast("✓ تم الحذف")
+}
+
+/* ================================================================
+   ADMIN: CUSTOMIZATIONS BUILDER
+================================================================ */
+function addCustBuilderGroup (existing = null) {
+  const gid = Date.now() + Math.random()
+  const grp = {
+    _gid   : gid,
+    db_id  : existing?.id || null,
+    name_ar: existing?.name_ar || "",
+    name_en: existing?.name_en || "",
+    type   : existing?.type    || "radio",
+    options: existing?.options  || [],
+  }
+  custBuilder.push(grp)
+  renderCustBuilder()
+}
+
+function removeCustBuilderGroup (gid) {
+  custBuilder = custBuilder.filter(g=>g._gid !== gid)
+  renderCustBuilder()
+}
+
+function renderCustBuilder () {
+  const container = document.getElementById("cust-builder")
+  container.innerHTML = custBuilder.map(grp => `
+    <div class="border border-gray-200 rounded-2xl p-3 bg-gray-50"
+         data-gid="${grp._gid}">
+
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-xs font-bold text-gray-500">مجموعة خيارات</span>
+        <button type="button"
+                onclick="removeCustBuilderGroup(${grp._gid})"
+                class="text-red-400 hover:text-red-600 text-xs">✕ حذف</button>
+      </div>
+
+      <input type="text" placeholder="اسم المجموعة (عربي)"
+             value="${grp.name_ar}"
+             onchange="updateCustGroup(${grp._gid},'name_ar',this.value)"
+             class="adm-input mb-2"/>
+      <input type="text" placeholder="Group name (English)"
+             value="${grp.name_en}"
+             onchange="updateCustGroup(${grp._gid},'name_en',this.value)"
+             class="adm-input mb-2"/>
+      <select onchange="updateCustGroup(${grp._gid},'type',this.value)"
+              class="adm-input mb-3">
+        <option value="radio"    ${grp.type==="radio"   ?"selected":""}>
+          اختيار واحد (Radio)
+        </option>
+        <option value="checkbox" ${grp.type==="checkbox"?"selected":""}>
+          اختيار متعدد (Checkbox)
+        </option>
+      </select>
+
+      <!-- Options list -->
+      <div class="space-y-2 mb-2" id="opts-${grp._gid}">
+        ${grp.options.map((opt,i)=>`
+          <div class="flex gap-1.5 items-center">
+            <input type="text" placeholder="اسم عربي"
+                   value="${opt.name_ar||""}"
+                   onchange="updateCustOpt(${grp._gid},${i},'name_ar',this.value)"
+                   class="adm-input flex-1"/>
+            <input type="text" placeholder="EN name"
+                   value="${opt.name_en||""}"
+                   onchange="updateCustOpt(${grp._gid},${i},'name_en',this.value)"
+                   class="adm-input flex-1"/>
+            <input type="number" placeholder="0" min="0" step="0.5"
+                   value="${opt.price||0}"
+                   onchange="updateCustOpt(${grp._gid},${i},'price',+this.value)"
+                   class="adm-input w-16"/>
+            <button type="button"
+                    onclick="removeCustOpt(${grp._gid},${i})"
+                    class="text-red-400 text-sm flex-shrink-0">✕</button>
+          </div>
+        `).join("")}
+      </div>
+
+      <button type="button"
+              onclick="addCustOpt(${grp._gid})"
+              class="text-xs text-white px-3 py-1.5 rounded-xl w-full"
+              style="background:var(--brand)">
+        + إضافة خيار
+      </button>
+    </div>
+  `).join("")
+}
+
+function updateCustGroup (gid, field, val) {
+  const grp = custBuilder.find(g=>g._gid===gid)
+  if (grp) grp[field] = val
+}
+function addCustOpt (gid) {
+  const grp = custBuilder.find(g=>g._gid===gid)
+  if (grp) { grp.options.push({name_ar:"",name_en:"",price:0}); renderCustBuilder() }
+}
+function removeCustOpt (gid, idx) {
+  const grp = custBuilder.find(g=>g._gid===gid)
+  if (grp) { grp.options.splice(idx,1); renderCustBuilder() }
+}
+function updateCustOpt (gid, idx, field, val) {
+  const grp = custBuilder.find(g=>g._gid===gid)
+  if (grp && grp.options[idx]) grp.options[idx][field] = val
+}
+function collectCustBuilder () {
+  /* read latest values directly from DOM inputs to capture any unsaved typing */
+  return custBuilder.map(grp => {
+    const el = document.querySelector(`[data-gid="${grp._gid}"]`)
+    if (!el) return grp
+    const inputs = el.querySelectorAll("input[type='text'], input[type='number']")
+    /* inputs order: name_ar, name_en, type-select, then per-opt: name_ar, name_en, price */
+    return {
+      name_ar: el.querySelectorAll("input[type='text']")[0]?.value || grp.name_ar,
+      name_en: el.querySelectorAll("input[type='text']")[1]?.value || grp.name_en,
+      type   : el.querySelector("select")?.value || grp.type,
+      options: grp.options,   /* already kept in sync via onchange handlers */
+    }
+  })
 }
 
 /* ================================================================
