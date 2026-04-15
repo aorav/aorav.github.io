@@ -73,14 +73,103 @@
     /* ── Modal backdrop blur ──────────────────────────────────── */
     .backdrop { backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
 
-    /* ── Loading spinner ──────────────────────────────────────── */
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner {
-      width: 2.5rem; height: 2.5rem;
-      border: 3px solid #e5e7eb;
-      border-top-color: var(--brand);
-      border-radius: 50%;
-      animation: spin .8s linear infinite;
+    /* ── Loading SCREEN (full brand overlay with logo + bar) ─── */
+    @keyframes loadPulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%     { opacity:.55; transform:scale(.93); }
+    }
+    @keyframes loadBar {
+      0%   { width:0% }
+      60%  { width:75% }
+      100% { width:100% }
+    }
+    #loading-screen {
+      transition: opacity .5s ease, visibility .5s ease;
+    }
+    #loading-screen.done {
+      opacity: 0; visibility: hidden; pointer-events: none;
+    }
+    .ld-icon { animation: loadPulse 1.8s ease-in-out infinite; }
+    .ld-bar {
+      width: 160px; height: 3px;
+      background: rgba(255,255,255,.2);
+      border-radius: 99px; overflow: hidden; margin-top: 1.5rem;
+    }
+    .ld-bar-fill {
+      height: 100%; background: #fff; border-radius: 99px;
+      animation: loadBar 2s ease forwards;
+    }
+
+    /* ── Card reveal on scroll ───────────────────────────────── */
+    .menu-card {
+      opacity: 0; transform: translateY(14px);
+      transition: opacity .4s ease, transform .4s ease;
+    }
+    .menu-card.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── Horizontal item card ───────────────────────────────── */
+    .item-card-h {
+      display: flex; height: 7.5rem; /* 120px */
+    }
+    .item-card-h .card-text {
+      flex: 1; padding: .75rem; min-width: 0;
+      display: flex; flex-direction: column; justify-content: space-between;
+      overflow: hidden;
+    }
+    .item-card-h .card-img-wrap {
+      width: 7.5rem; flex-shrink: 0; position: relative; overflow: hidden;
+    }
+    .item-card-h .card-img-wrap img {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+
+    /* ── Placeholder image ──────────────────────────────────── */
+    .img-ph {
+      width:100%; height:100%;
+      background: linear-gradient(135deg,#f5f5f5,#ececec);
+      display:flex; align-items:center; justify-content:center;
+      font-size: 2rem;
+    }
+
+    /* ── Cart shake ─────────────────────────────────────────── */
+    @keyframes cartShake {
+      0%,100%{ transform:rotate(0) scale(1); }
+      15%    { transform:rotate(-7deg) scale(1.12); }
+      35%    { transform:rotate(7deg)  scale(1.12); }
+      55%    { transform:rotate(-4deg); }
+      75%    { transform:rotate(4deg); }
+    }
+    .cart-shake { animation: cartShake .5s ease; }
+
+    /* ── Offer badge ────────────────────────────────────────── */
+    .offer-badge {
+      font-size:9px; font-weight:700; padding:2px 7px;
+      border-radius:99px; letter-spacing:.3px; line-height:1.4;
+      background:linear-gradient(135deg,#ff6b35,#e53e3e);
+      color:#fff;
+    }
+
+    /* ── Section heading with rule line ────────────────────── */
+    .sec-rule {
+      display:flex; align-items:center; gap:10px; margin-bottom:.875rem;
+    }
+    .sec-rule::after {
+      content:''; flex:1; height:1px; background:rgba(0,0,0,.06);
+    }
+
+    /* ── Drag-and-drop highlight ────────────────────────────── */
+    .drag-over {
+      outline: 2px dashed var(--brand) !important;
+      background: rgba(139,0,0,.04) !important;
+    }
+    [draggable="true"] { cursor: grab; }
+    [draggable="true"]:active { cursor: grabbing; }
+    .dragging { opacity:.35; }
+
+    /* ── Footer ─────────────────────────────────────────────── */
+    #site-footer {
+      text-align:center; padding:1.5rem 1rem 2rem;
+      border-top:1px solid #f0f0f0; margin-top:1.5rem;
     }
 
     /* ── Admin: toggle switch ─────────────────────────────────── */
@@ -332,6 +421,27 @@
     <!-- Category sections rendered by JS -->
   </main>
   <!-- ── /MENU CONTENT ─────────────────────────────────────────── -->
+
+  <!-- ── FOOTER ────────────────────────────────────────────────── -->
+  <footer id="site-footer">
+    <p class="text-xs text-gray-400 mb-1">مدعوم بواسطة</p>
+    <a href="https://aorav.com" target="_blank"
+       class="inline-flex items-center gap-1.5 font-bold text-gray-600
+              hover:text-gray-900 transition-colors text-sm">
+      <svg class="w-5 h-5" viewBox="0 0 40 40" fill="none">
+        <rect width="40" height="40" rx="10" fill="#111"/>
+        <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle"
+              fill="#fff" font-size="14" font-weight="bold"
+              font-family="sans-serif">A</text>
+      </svg>
+      AORAV
+    </a>
+    <p class="text-xs text-gray-300 mt-2">
+      <a id="footer-wa" href="#"
+         class="hover:text-gray-500 transition-colors">تواصل معنا</a>
+    </p>
+  </footer>
+  <!-- ── /FOOTER ───────────────────────────────────────────────── -->
 
 </div><!-- /customer-view -->
 
@@ -607,11 +717,11 @@
 <!-- ╔══════════════════════════════════════════════════════════╗
      ║                  LOADING OVERLAY                        ║
      ╚══════════════════════════════════════════════════════════╝ -->
-<div id="loading-overlay"
-     class="hidden fixed inset-0 z-[200] bg-white
-            flex flex-col items-center justify-center gap-4">
-  <div class="spinner"></div>
-  <p class="text-sm text-gray-400">جاري التحميل…</p>
+<div id="loading-screen"
+     class="fixed inset-0 z-[200] flex flex-col items-center justify-center"
+     style="background:var(--brand)">
+  <div class="ld-icon text-6xl">🍽️</div>
+  <div class="ld-bar"><div class="ld-bar-fill"></div></div>
 </div>
 
 
@@ -944,19 +1054,59 @@
                class="adm-input w-28" placeholder="الترتيب"/>
       </div>
 
-      <!-- Image URL -->
-      <input id="if-image" type="url" class="adm-input"
-             placeholder="رابط الصورة (imgbb أو أي رابط)"/>
+      <!-- Image URL + Upload -->
+      <div class="flex gap-2 items-center">
+        <input id="if-image" type="url" class="adm-input flex-1"
+               placeholder="رابط الصورة أو ارفع صورة ←"/>
+        <label class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center
+                      justify-center cursor-pointer border-2 border-dashed
+                      border-gray-300 hover:border-gray-400 transition-colors
+                      relative overflow-hidden"
+               title="رفع صورة">
+          <span class="text-xl">📷</span>
+          <input type="file" id="if-image-file"
+                 accept="image/jpeg,image/png,image/webp"
+                 class="absolute inset-0 opacity-0 cursor-pointer"
+                 onchange="handleImageUpload(this)"/>
+        </label>
+      </div>
+      <div id="if-img-preview" class="hidden">
+        <img id="if-img-preview-el"
+             class="w-full h-28 object-cover rounded-xl border border-gray-200"/>
+      </div>
 
-      <!-- Available toggle -->
-      <div class="flex items-center justify-between py-1">
-        <span class="text-sm font-semibold text-gray-700">متاح للطلب</span>
-        <div id="if-avail-toggle"
-             class="toggle-track on"
-             onclick="this.classList.toggle('on')"
-             role="switch" aria-checked="true">
-          <div class="toggle-thumb"></div>
+      <!-- Toggles row -->
+      <div class="grid grid-cols-3 gap-2">
+        <div class="flex flex-col items-center gap-1 p-2 rounded-xl
+                    border border-gray-200 text-center">
+          <span class="text-xs text-gray-500 font-semibold">متاح</span>
+          <div id="if-avail-toggle" class="toggle-track on"
+               onclick="this.classList.toggle('on')">
+            <div class="toggle-thumb"></div>
+          </div>
         </div>
+        <div class="flex flex-col items-center gap-1 p-2 rounded-xl
+                    border border-gray-200 text-center">
+          <span class="text-xs text-gray-500 font-semibold">⭐ الأكثر طلباً</span>
+          <div id="if-popular-toggle" class="toggle-track"
+               onclick="this.classList.toggle('on')">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+        <div class="flex flex-col items-center gap-1 p-2 rounded-xl
+                    border border-gray-200 text-center">
+          <span class="text-xs text-gray-500 font-semibold">🏷️ عرض خاص</span>
+          <div id="if-offer-toggle" class="toggle-track"
+               onclick="this.classList.toggle('on');toggleOldPrice(this)">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Old price (visible only when offer is on) -->
+      <div id="if-old-price-wrap" class="hidden">
+        <input id="if-old-price" type="number" step="0.5" min="0"
+               class="adm-input" placeholder="السعر القديم (قبل الخصم)"/>
       </div>
 
       <!-- Allergens -->
@@ -971,12 +1121,27 @@
 
       <!-- ── Customizations builder ── -->
       <div class="border-t pt-4">
-        <div class="flex items-center justify-between mb-3">
-          <p class="text-sm font-bold text-gray-700">خيارات التخصيص</p>
-          <button type="button" onclick="addCustBuilderGroup()"
-                  class="text-xs text-white px-3 py-1.5 rounded-xl font-semibold"
+        <p class="text-sm font-bold text-gray-700 mb-2">خيارات التخصيص</p>
+        <div class="flex gap-2 flex-wrap mb-3">
+          <button type="button"
+                  onclick="addCustBuilderGroup({nameAr:'الحجم',nameEn:'Size',type:'radio'})"
+                  class="text-xs text-white px-3 py-2 rounded-xl font-semibold
+                         flex items-center gap-1"
                   style="background:var(--brand)">
-            + مجموعة
+            📏 + أضف حجم
+          </button>
+          <button type="button"
+                  onclick="addCustBuilderGroup({nameAr:'إضافات',nameEn:'Extras',type:'checkbox'})"
+                  class="text-xs text-white px-3 py-2 rounded-xl font-semibold
+                         flex items-center gap-1"
+                  style="background:var(--brand)">
+            ➕ + أضف إضافة
+          </button>
+          <button type="button"
+                  onclick="addCustBuilderGroup()"
+                  class="text-xs px-3 py-2 rounded-xl font-semibold
+                         border-2 border-gray-200 text-gray-600">
+            ⚙️ مخصص
           </button>
         </div>
         <div id="cust-builder" class="space-y-3">
@@ -1097,86 +1262,88 @@ const CATEGORIES = [
     desc_en: "A variety of cold and hot beverages" },
 ]
 
+const PLACEHOLDER_IMG = null   // null = show emoji placeholder
+
 const ITEMS = [
   /* ── Burgers ── */
-  { id: 101, category_id: 1, sort_order: 1, available: true,
-    name_ar: "برغر كلاسيك",      name_en: "Classic Burger",
-    desc_ar: "لحم بقري طازج مع الجبن والخضار الطازجة وصوص البيت",
-    desc_en: "Fresh beef patty with cheese, fresh veggies and house sauce",
-    price: 29, image_url: "https://picsum.photos/400/300?random=101",
-    allergens: ["gluten","dairy","eggs"] },
+  { id:101, category_id:1, sort_order:1, available:true,
+    is_popular:true, is_offer:false, old_price:null,
+    name_ar:"برغر كلاسيك", name_en:"Classic Burger",
+    desc_ar:"لحم بقري طازج مع الجبن والخضار الطازجة وصوص البيت",
+    desc_en:"Fresh beef patty with cheese, fresh veggies and house sauce",
+    price:29, image_url:null, allergens:["gluten","dairy","eggs"] },
 
-  { id: 102, category_id: 1, sort_order: 2, available: true,
-    name_ar: "برغر دبل تشيز",     name_en: "Double Cheeseburger",
-    desc_ar: "قطعتا لحم مع طبقة مزدوجة من الجبن الذائب اللذيذ",
-    desc_en: "Double beef patties with double melted cheese layers",
-    price: 39, image_url: "https://picsum.photos/400/300?random=102",
-    allergens: ["gluten","dairy"] },
+  { id:102, category_id:1, sort_order:2, available:true,
+    is_popular:false, is_offer:true, old_price:45,
+    name_ar:"برغر دبل تشيز", name_en:"Double Cheeseburger",
+    desc_ar:"قطعتا لحم مع طبقة مزدوجة من الجبن الذائب اللذيذ",
+    desc_en:"Double beef patties with double melted cheese layers",
+    price:39, image_url:null, allergens:["gluten","dairy"] },
 
-  { id: 103, category_id: 1, sort_order: 3, available: true,
-    name_ar: "برغر مشروم",        name_en: "Mushroom Burger",
-    desc_ar: "لحم مع الفطر المشوي والجبن السويسري وصوص الثوم",
-    desc_en: "Beef with grilled mushrooms, Swiss cheese and garlic sauce",
-    price: 34, image_url: "https://picsum.photos/400/300?random=103",
-    allergens: ["gluten","dairy"] },
+  { id:103, category_id:1, sort_order:3, available:true,
+    is_popular:false, is_offer:false, old_price:null,
+    name_ar:"برغر مشروم", name_en:"Mushroom Burger",
+    desc_ar:"لحم مع الفطر المشوي والجبن السويسري وصوص الثوم",
+    desc_en:"Beef with grilled mushrooms, Swiss cheese and garlic sauce",
+    price:34, image_url:null, allergens:["gluten","dairy"] },
 
-  { id: 104, category_id: 1, sort_order: 4, available: false,
-    name_ar: "برغر سبايسي",       name_en: "Spicy Burger",
-    desc_ar: "لحم حار مع الفلفل الحار وجبن الشيدر وصوص السرارتشا",
-    desc_en: "Spicy beef with jalapeños, cheddar and sriracha sauce",
-    price: 32, image_url: "https://picsum.photos/400/300?random=104",
-    allergens: ["gluten","dairy","spicy"] },
+  { id:104, category_id:1, sort_order:4, available:false,
+    is_popular:false, is_offer:false, old_price:null,
+    name_ar:"برغر سبايسي", name_en:"Spicy Burger",
+    desc_ar:"لحم حار مع الفلفل الحار وجبن الشيدر وصوص السرارتشا",
+    desc_en:"Spicy beef with jalapeños, cheddar and sriracha sauce",
+    price:32, image_url:null, allergens:["gluten","dairy","spicy"] },
 
   /* ── Snacks ── */
-  { id: 201, category_id: 2, sort_order: 1, available: true,
-    name_ar: "بطاطس مقلية",       name_en: "French Fries",
-    desc_ar: "بطاطس ذهبية مقرمشة مع صوص الكاتشب والمايونيز",
-    desc_en: "Crispy golden fries with ketchup and mayo dip",
-    price: 12, image_url: "https://picsum.photos/400/300?random=201",
-    allergens: ["gluten"] },
+  { id:201, category_id:2, sort_order:1, available:true,
+    is_popular:true, is_offer:false, old_price:null,
+    name_ar:"بطاطس مقلية", name_en:"French Fries",
+    desc_ar:"بطاطس ذهبية مقرمشة مع صوص الكاتشب والمايونيز",
+    desc_en:"Crispy golden fries with ketchup and mayo dip",
+    price:12, image_url:null, allergens:["gluten"] },
 
-  { id: 202, category_id: 2, sort_order: 2, available: true,
-    name_ar: "أجنحة الدجاج",      name_en: "Chicken Wings",
-    desc_ar: "٦ أجنحة دجاج مشوية بتتبيلة خاصة مع صوص الباربيكيو",
-    desc_en: "6 grilled chicken wings with special marinade and BBQ sauce",
-    price: 22, image_url: "https://picsum.photos/400/300?random=202",
-    allergens: ["gluten","spicy"] },
+  { id:202, category_id:2, sort_order:2, available:true,
+    is_popular:true, is_offer:true, old_price:28,
+    name_ar:"أجنحة الدجاج", name_en:"Chicken Wings",
+    desc_ar:"٦ أجنحة دجاج مشوية بتتبيلة خاصة مع صوص الباربيكيو",
+    desc_en:"6 grilled chicken wings with special marinade and BBQ sauce",
+    price:22, image_url:null, allergens:["gluten","spicy"] },
 
-  { id: 203, category_id: 2, sort_order: 3, available: true,
-    name_ar: "حلقات البصل",       name_en: "Onion Rings",
-    desc_ar: "حلقات بصل مقرمشة محمرة ذهبية مع صوص الرانش الكريمي",
-    desc_en: "Crispy golden fried onion rings with ranch sauce",
-    price: 15, image_url: "https://picsum.photos/400/300?random=203",
-    allergens: ["gluten","dairy","eggs"] },
+  { id:203, category_id:2, sort_order:3, available:true,
+    is_popular:false, is_offer:false, old_price:null,
+    name_ar:"حلقات البصل", name_en:"Onion Rings",
+    desc_ar:"حلقات بصل مقرمشة محمرة ذهبية مع صوص الرانش الكريمي",
+    desc_en:"Crispy golden fried onion rings with ranch sauce",
+    price:15, image_url:null, allergens:["gluten","dairy","eggs"] },
 
-  { id: 204, category_id: 2, sort_order: 4, available: true,
-    name_ar: "ناتشوز",            name_en: "Nachos",
-    desc_ar: "رقائق الذرة مع الجبن الذائب والسالسا والجالبينيو",
-    desc_en: "Tortilla chips with melted cheese, salsa and jalapeños",
-    price: 18, image_url: "https://picsum.photos/400/300?random=204",
-    allergens: ["gluten","dairy","spicy"] },
+  { id:204, category_id:2, sort_order:4, available:true,
+    is_popular:false, is_offer:true, old_price:22,
+    name_ar:"ناتشوز", name_en:"Nachos",
+    desc_ar:"رقائق الذرة مع الجبن الذائب والسالسا والجالبينيو",
+    desc_en:"Tortilla chips with melted cheese, salsa and jalapeños",
+    price:18, image_url:null, allergens:["gluten","dairy","spicy"] },
 
   /* ── Drinks ── */
-  { id: 301, category_id: 3, sort_order: 1, available: true,
-    name_ar: "ليمون طازج",        name_en: "Fresh Lemonade",
-    desc_ar: "عصير ليمون طازج مع النعناع والثلج المهروس",
-    desc_en: "Fresh lemon juice with mint and crushed ice",
-    price: 10, image_url: "https://picsum.photos/400/300?random=301",
-    allergens: [] },
+  { id:301, category_id:3, sort_order:1, available:true,
+    is_popular:false, is_offer:false, old_price:null,
+    name_ar:"ليمون طازج", name_en:"Fresh Lemonade",
+    desc_ar:"عصير ليمون طازج مع النعناع والثلج المهروس",
+    desc_en:"Fresh lemon juice with mint and crushed ice",
+    price:10, image_url:null, allergens:[] },
 
-  { id: 302, category_id: 3, sort_order: 2, available: true,
-    name_ar: "ميلك شيك شوكولا",   name_en: "Chocolate Milkshake",
-    desc_ar: "ميلك شيك كثيف بالشوكولا الداكنة والكريمة المخفوقة",
-    desc_en: "Thick milkshake with dark chocolate and whipped cream",
-    price: 16, image_url: "https://picsum.photos/400/300?random=302",
-    allergens: ["dairy"] },
+  { id:302, category_id:3, sort_order:2, available:true,
+    is_popular:true, is_offer:false, old_price:null,
+    name_ar:"ميلك شيك شوكولا", name_en:"Chocolate Milkshake",
+    desc_ar:"ميلك شيك كثيف بالشوكولا الداكنة والكريمة المخفوقة",
+    desc_en:"Thick milkshake with dark chocolate and whipped cream",
+    price:16, image_url:null, allergens:["dairy"] },
 
-  { id: 303, category_id: 3, sort_order: 3, available: true,
-    name_ar: "عصير فراولة",       name_en: "Strawberry Juice",
-    desc_ar: "عصير فراولة طازج مبرد مع قطع الفراولة الطازجة",
-    desc_en: "Fresh chilled strawberry juice with fresh strawberry pieces",
-    price: 12, image_url: "https://picsum.photos/400/300?random=303",
-    allergens: [] },
+  { id:303, category_id:3, sort_order:3, available:true,
+    is_popular:false, is_offer:false, old_price:null,
+    name_ar:"عصير فراولة", name_en:"Strawberry Juice",
+    desc_ar:"عصير فراولة طازج مبرد مع قطع الفراولة الطازجة",
+    desc_en:"Fresh chilled strawberry juice with fresh strawberry pieces",
+    price:12, image_url:null, allergens:[] },
 
   { id: 304, category_id: 3, sort_order: 4, available: true,
     name_ar: "كوكاكولا",          name_en: "Coca-Cola",
@@ -1257,19 +1424,20 @@ async function init () {
     document.getElementById("table-number").textContent = tableNo
   }
 
-  /* Show loading spinner */
-  document.getElementById("loading-overlay").classList.remove("hidden")
-
+  /* Loading screen is visible by default (no hidden class needed) */
   await loadFromSupabase()          // sets liveCategories / liveItems / etc.
 
-  /* Hide loading spinner */
-  document.getElementById("loading-overlay").classList.add("hidden")
+  /* Fade out loading screen */
+  const ls = document.getElementById("loading-screen")
+  ls.classList.add("done")
 
   applySettings()
 
   renderTabs()
   renderMenu()
   setupScrollSpy()
+  setupCardAnimation()
+  document.getElementById("footer-wa").href = `https://wa.me/${waNumber}`
 }
 
 /* ================================================================
@@ -1300,12 +1468,15 @@ async function loadFromSupabase () {
       liveCategories = CATEGORIES.slice()  // fallback
     }
 
-    /* items */
+    /* items – also map new fields (is_popular, old_price) */
     if (itmRes.data && itmRes.data.length > 0) {
       liveItems = itmRes.data.map(i => ({
         ...i,
-        desc_ar : i.description_ar || "",
-        desc_en : i.description_en || "",
+        desc_ar    : i.description_ar || "",
+        desc_en    : i.description_en || "",
+        is_popular : i.is_popular || false,
+        is_offer   : i.is_offer   || false,
+        old_price  : i.old_price  || null,
       }))
     } else {
       liveItems = ITEMS.slice()            // fallback
@@ -1353,12 +1524,9 @@ function applySettings () {
   const igEl = document.querySelector("a[aria-label='Instagram']")
   if (igEl && cfg.instagram_url) igEl.href = cfg.instagram_url
 
-  if (cfg.whatsapp_number) {
-    waNumber = cfg.whatsapp_number
-    document.getElementById("header-wa").href = `https://wa.me/${waNumber}`
-  } else {
-    document.getElementById("header-wa").href = `https://wa.me/${waNumber}`
-  }
+  if (cfg.whatsapp_number) waNumber = cfg.whatsapp_number
+  document.getElementById("header-wa").href = `https://wa.me/${waNumber}`
+  document.getElementById("footer-wa").href  = `https://wa.me/${waNumber}`
 
   const scEl = document.querySelector("a[aria-label='Snapchat']")
   if (scEl && cfg.snapchat_url) scEl.href = cfg.snapchat_url
@@ -1394,7 +1562,10 @@ function renderTabs () {
 ================================================================ */
 function renderMenu () {
   const main = document.getElementById("menu-content")
-  main.innerHTML = liveCategories
+
+  const topSections = renderFeaturedSection() + renderOffersSection()
+
+  main.innerHTML = topSections + liveCategories
     .slice()
     .sort((a,b) => a.sort_order - b.sort_order)
     .map(cat => {
@@ -1409,7 +1580,7 @@ function renderMenu () {
         <section id="section-${cat.id}" class="mb-8 scroll-mt-14">
           <h2 class="text-xl font-bold text-gray-900 mb-0.5">${catName}</h2>
           ${catDesc ? `<p class="text-sm text-gray-400 mb-3">${catDesc}</p>` : ""}
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 gap-2">
             ${catItems.map(renderItemCard).join("")}
           </div>
         </section>
@@ -1418,57 +1589,65 @@ function renderMenu () {
 }
 
 /* ================================================================
-   RENDER – SINGLE ITEM CARD
+   RENDER – SINGLE ITEM CARD  (horizontal layout)
 ================================================================ */
-function renderItemCard (item) {
-  const name  = lang === "ar" ? item.name_ar : item.name_en
-  const desc  = lang === "ar" ? item.desc_ar  : item.desc_en
-  const img   = item.image_url || `https://picsum.photos/400/300?random=${item.id}`
+function imgTag (item) {
+  if (!item.image_url) return `<div class="img-ph">🍽️</div>`
+  return `<img src="${item.image_url}" alt=""
+               style="width:100%;height:100%;object-fit:cover"
+               onerror="this.parentElement.innerHTML='<div class=\\"img-ph\\">🍽️</div>'"/>`
+}
 
-  const allergenBadges = (item.allergens || []).map(key => {
+function renderItemCard (item) {
+  const name = lang === "ar" ? item.name_ar : item.name_en
+  const desc = lang === "ar" ? item.desc_ar  : item.desc_en
+
+  const allergenBadges = (item.allergens || []).slice(0,3).map(key => {
     const a = ALLERGENS[key]
-    if (!a) return ""
-    return `<span class="text-xs bg-orange-50 text-orange-700
-                         border border-orange-200 px-1.5 py-0.5 rounded-full">
-              ${a.emoji} ${lang === "ar" ? a.ar : a.en}
-            </span>`
+    return a ? `<span class="text-xs bg-orange-50 text-orange-700
+                              border border-orange-200 px-1.5 py-0.5 rounded-full">
+                  ${a.emoji}
+                </span>` : ""
   }).join("")
 
-  const unavailableOverlay = !item.available ? `
-    <div class="absolute inset-0 bg-black/25 flex items-center justify-center rounded-t-2xl">
-      <span class="text-white text-xs font-bold bg-black/50 px-2 py-1 rounded-full">
-        ${s("unavailable")}
-      </span>
-    </div>` : ""
+  const priceBlock = (item.is_offer && item.old_price)
+    ? `<span class="line-through text-gray-300 text-xs me-1">${item.old_price}</span>
+       <span class="font-bold text-sm" style="color:var(--brand)">
+         ${item.price} ${s("sarSuffix")}
+       </span>`
+    : `<span class="font-bold text-sm" style="color:var(--brand)">
+         ${item.price} ${s("sarSuffix")}
+       </span>`
 
   return `
-    <div
-      class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100
-             cursor-pointer active:scale-95 transition-transform
-             ${!item.available ? "item-unavailable" : ""}"
-      onclick="${item.available ? `openItemModal(${item.id})` : ""}"
-    >
-      <!-- Thumbnail -->
-      <div class="relative">
-        <img
-          src="${img}"
-          alt="${name}"
-          class="item-thumb"
-          onerror="this.src='https://picsum.photos/400/300?random=${item.id + 9}'"
-        />
-        ${unavailableOverlay}
+    <div class="menu-card item-card-h bg-white rounded-2xl overflow-hidden
+                shadow-sm border border-gray-100 col-span-2
+                cursor-pointer active:scale-[.98] transition-transform
+                ${!item.available ? "item-unavailable" : ""}"
+         onclick="${item.available ? `openItemModal(${item.id})` : ""}">
+
+      <!-- Text side (start = right in RTL) -->
+      <div class="card-text">
+        <div>
+          <h3 class="font-bold text-gray-800 text-sm leading-tight clamp2">${name}</h3>
+          <p class="text-gray-400 text-xs mt-0.5 clamp2">${desc || ""}</p>
+        </div>
+        <div class="flex items-center gap-1.5 flex-wrap">
+          ${allergenBadges}
+          ${priceBlock}
+        </div>
       </div>
 
-      <!-- Card body -->
-      <div class="p-2.5">
-        <h3 class="font-bold text-gray-800 text-sm leading-snug clamp2">${name}</h3>
-        <p  class="text-gray-400 text-xs mt-0.5 clamp2">${desc || ""}</p>
-        ${allergenBadges
-          ? `<div class="flex flex-wrap gap-1 mt-1.5">${allergenBadges}</div>`
+      <!-- Image side (end = left in RTL) -->
+      <div class="card-img-wrap">
+        ${imgTag(item)}
+        ${!item.available
+          ? `<div class="absolute inset-0 bg-black/30 flex items-center justify-center">
+               <span class="text-white text-xs font-bold bg-black/40 px-2 py-0.5 rounded-full">
+                 ${s("unavailable")}
+               </span>
+             </div>`
           : ""}
-        <p class="font-bold text-sm mt-2" style="color:var(--brand)">
-          ${item.price} ${s("sarSuffix")}
-        </p>
       </div>
     </div>
   `
@@ -1748,10 +1927,10 @@ function refreshCartBar () {
 
 function popCartBar () {
   const btn = document.getElementById("cart-bar-btn")
-  btn.classList.remove("cart-pop")
+  btn.classList.remove("cart-shake")
   void btn.offsetWidth
-  btn.classList.add("cart-pop")
-  btn.addEventListener("animationend", () => btn.classList.remove("cart-pop"), { once: true })
+  btn.classList.add("cart-shake")
+  btn.addEventListener("animationend", () => btn.classList.remove("cart-shake"), { once: true })
 }
 
 /* ================================================================
@@ -1890,8 +2069,9 @@ function toggleLang () {
   renderMenu()
   refreshCartBar()
 
-  /* re-attach scroll spy after new DOM */
+  /* re-attach scroll spy + card animation after new DOM */
   setTimeout(setupScrollSpy, 100)
+  setTimeout(setupCardAnimation, 120)
 }
 
 /* ================================================================
@@ -2037,16 +2217,14 @@ function renderAdminCategories () {
     return
   }
   list.innerHTML = sorted.map((cat, idx) => `
-    <div class="adm-card flex items-center gap-3 px-4 py-3">
-      <!-- reorder -->
-      <div class="flex flex-col gap-0.5">
-        <button onclick="reorderCat(${cat.id},-1)"
-                class="text-gray-400 hover:text-gray-700 disabled:opacity-30 text-xs leading-none"
-                ${idx===0?"disabled":""}>▲</button>
-        <button onclick="reorderCat(${cat.id},1)"
-                class="text-gray-400 hover:text-gray-700 disabled:opacity-30 text-xs leading-none"
-                ${idx===sorted.length-1?"disabled":""}>▼</button>
-      </div>
+    <div class="adm-card flex items-center gap-3 px-4 py-3 rounded-2xl border border-transparent"
+         draggable="true"
+         ondragstart="onDragStart(event,${cat.id},'cat')"
+         ondragend="onDragEnd(event)"
+         ondragover="onDragOver(event)"
+         ondragleave="onDragLeave(event)"
+         ondrop="onDropCat(event,${cat.id})">
+      <span class="text-gray-300 text-sm cursor-grab select-none">⠿</span>
       <!-- info -->
       <div class="flex-1 min-w-0">
         <p class="font-bold text-gray-800 text-sm">${cat.name_ar}</p>
@@ -2203,7 +2381,14 @@ function renderAdminItems () {
     return
   }
   list.innerHTML = filtered.map(item=>`
-    <div class="adm-card flex items-center gap-3 px-3 py-3">
+    <div class="adm-card flex items-center gap-3 px-3 py-3 border border-transparent rounded-2xl"
+         draggable="true"
+         ondragstart="onDragStart(event,${item.id},'item')"
+         ondragend="onDragEnd(event)"
+         ondragover="onDragOver(event)"
+         ondragleave="onDragLeave(event)"
+         ondrop="onDropItem(event,${item.id})">
+      <span class="text-gray-300 text-sm cursor-grab select-none">⠿</span>
       <img src="${item.image_url||`https://picsum.photos/60/60?random=${item.id}`}"
            class="w-12 h-12 rounded-xl object-cover flex-shrink-0"
            onerror="this.src='https://picsum.photos/60/60?random=${item.id+5}'"/>
@@ -2274,6 +2459,18 @@ async function openItemModal_admin (itemId = null) {
     document.getElementById("if-image").value    = item.image_url || ""
     const tog = document.getElementById("if-avail-toggle")
     item.available!==false ? tog.classList.add("on") : tog.classList.remove("on")
+    const popTog = document.getElementById("if-popular-toggle")
+    item.is_popular ? popTog.classList.add("on") : popTog.classList.remove("on")
+    const offTog = document.getElementById("if-offer-toggle")
+    item.is_offer ? offTog.classList.add("on") : offTog.classList.remove("on")
+    document.getElementById("if-old-price").value = item.old_price || ""
+    document.getElementById("if-old-price-wrap").classList.toggle("hidden", !item.is_offer)
+    /* image preview */
+    const prev = document.getElementById("if-img-preview")
+    if (item.image_url) {
+      document.getElementById("if-img-preview-el").src = item.image_url
+      prev.classList.remove("hidden")
+    } else { prev.classList.add("hidden") }
     /* allergens */
     document.querySelectorAll("input[name='allergen']").forEach(cb=>{
       cb.checked = (item.allergens||[]).includes(cb.value)
@@ -2287,6 +2484,11 @@ async function openItemModal_admin (itemId = null) {
       .forEach(id => document.getElementById(id).value = "")
     document.getElementById("if-cat-id").value = ""
     document.getElementById("if-avail-toggle").classList.add("on")
+    document.getElementById("if-popular-toggle").classList.remove("on")
+    document.getElementById("if-offer-toggle").classList.remove("on")
+    document.getElementById("if-old-price").value = ""
+    document.getElementById("if-old-price-wrap").classList.add("hidden")
+    document.getElementById("if-img-preview").classList.add("hidden")
     document.querySelectorAll("input[name='allergen']").forEach(cb=>cb.checked=false)
   }
 
@@ -2303,18 +2505,28 @@ function closeItemAdmModal () {
    ADMIN: ITEMS — save
 ================================================================ */
 async function saveItem_admin () {
-  const nameAr = document.getElementById("if-name-ar").value.trim()
-  const nameEn = document.getElementById("if-name-en").value.trim()
-  const price  = parseFloat(document.getElementById("if-price").value)
-  const catId  = document.getElementById("if-cat-id").value
+  const nameArRaw = document.getElementById("if-name-ar").value.trim()
+  const nameEnRaw = document.getElementById("if-name-en").value.trim()
+  const price     = parseFloat(document.getElementById("if-price").value)
+  const catId     = document.getElementById("if-cat-id").value
 
-  if (!nameAr || !nameEn || isNaN(price) || !catId) {
-    showToast("يرجى تعبئة الحقول المطلوبة *"); return
+  if (!nameArRaw && !nameEnRaw) {
+    showToast("أدخل الاسم بالعربية أو الإنجليزية على الأقل"); return
   }
+  if (isNaN(price) || !catId) {
+    showToast("يرجى تعبئة السعر والتصنيف *"); return
+  }
+
+  /* If only one language provided, use it as fallback for the other */
+  const nameAr = nameArRaw || nameEnRaw
+  const nameEn = nameEnRaw || nameArRaw
 
   const allergens = [...document.querySelectorAll("input[name='allergen']:checked")]
     .map(cb=>cb.value)
-  const available = document.getElementById("if-avail-toggle").classList.contains("on")
+  const available  = document.getElementById("if-avail-toggle").classList.contains("on")
+  const is_popular = document.getElementById("if-popular-toggle").classList.contains("on")
+  const is_offer   = document.getElementById("if-offer-toggle").classList.contains("on")
+  const old_price  = parseFloat(document.getElementById("if-old-price").value) || null
 
   const data = {
     category_id   : parseInt(catId),
@@ -2326,6 +2538,9 @@ async function saveItem_admin () {
     image_url     : document.getElementById("if-image").value.trim() || null,
     allergens,
     available,
+    is_popular,
+    is_offer,
+    old_price,
     sort_order    : parseInt(document.getElementById("if-sort").value) || 0,
   }
 
@@ -2377,11 +2592,13 @@ async function deleteItem_admin (itemId) {
 ================================================================ */
 function addCustBuilderGroup (existing = null) {
   const gid = Date.now() + Math.random()
+  /* existing can be a DB record {name_ar, name_en, ...}
+     OR a shortcut preset {nameAr, nameEn, type} */
   const grp = {
     _gid   : gid,
     db_id  : existing?.id || null,
-    name_ar: existing?.name_ar || "",
-    name_en: existing?.name_en || "",
+    name_ar: existing?.name_ar || existing?.nameAr || "",
+    name_en: existing?.name_en || existing?.nameEn || "",
     type   : existing?.type    || "radio",
     options: existing?.options  || [],
   }
@@ -2488,6 +2705,178 @@ function collectCustBuilder () {
       options: grp.options,   /* already kept in sync via onchange handlers */
     }
   })
+}
+
+/* ================================================================
+   FEATURED — "Most Ordered" horizontal scroll
+================================================================ */
+function renderFeaturedSection () {
+  const items = liveItems.filter(i => i.is_popular && i.available !== false)
+  if (!items.length) return ""
+  const title = lang === "ar" ? "⭐ الأكثر طلباً" : "⭐ Most Ordered"
+  return `
+    <section class="mb-5">
+      <div class="sec-rule px-1">
+        <span class="font-bold text-gray-800 text-base">${title}</span>
+      </div>
+      <div class="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+        ${items.map(item => {
+          const name = lang === "ar" ? item.name_ar : item.name_en
+          return `
+            <div class="flex-shrink-0 w-32 bg-white rounded-2xl overflow-hidden
+                        shadow-sm border border-gray-100 cursor-pointer
+                        active:scale-95 transition-transform"
+                 onclick="openItemModal(${item.id})">
+              <div style="height:5.5rem;overflow:hidden">${imgTag(item)}</div>
+              <div class="p-2">
+                <p class="font-bold text-xs text-gray-800 clamp2">${name}</p>
+                <p class="font-bold text-xs mt-0.5" style="color:var(--brand)">
+                  ${item.price} ${s("sarSuffix")}
+                </p>
+              </div>
+            </div>`
+        }).join("")}
+      </div>
+    </section>`
+}
+
+/* ================================================================
+   OFFERS — horizontal scroll with old/new price
+================================================================ */
+function renderOffersSection () {
+  const items = liveItems.filter(i => i.is_offer && i.available !== false)
+  if (!items.length) return ""
+  const title = lang === "ar" ? "🏷️ العروض" : "🏷️ Offers"
+  return `
+    <section class="mb-5">
+      <div class="sec-rule px-1">
+        <span class="font-bold text-gray-800 text-base">${title}</span>
+      </div>
+      <div class="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+        ${items.map(item => {
+          const name = lang === "ar" ? item.name_ar : item.name_en
+          return `
+            <div class="flex-shrink-0 w-36 bg-white rounded-2xl overflow-hidden
+                        shadow-sm border border-gray-100 cursor-pointer
+                        active:scale-95 transition-transform relative"
+                 onclick="openItemModal(${item.id})">
+              <span class="offer-badge absolute top-2 start-2 z-10">
+                ${lang === "ar" ? "عرض محدود" : "Limited"}
+              </span>
+              <div style="height:5.5rem;overflow:hidden">${imgTag(item)}</div>
+              <div class="p-2">
+                <p class="font-bold text-xs text-gray-800 clamp2">${name}</p>
+                <div class="flex items-baseline gap-1 mt-0.5">
+                  ${item.old_price
+                    ? `<span class="line-through text-gray-300 text-xs">${item.old_price}</span>`
+                    : ""}
+                  <span class="font-bold text-sm" style="color:var(--brand)">
+                    ${item.price} ${s("sarSuffix")}
+                  </span>
+                </div>
+              </div>
+            </div>`
+        }).join("")}
+      </div>
+    </section>`
+}
+
+/* ================================================================
+   CARD SCROLL ANIMATION
+================================================================ */
+function setupCardAnimation () {
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add("visible")
+        obs.unobserve(e.target)
+      }
+    })
+  }, { threshold: 0.08 })
+  document.querySelectorAll(".menu-card").forEach(c => obs.observe(c))
+}
+
+/* ================================================================
+   IMAGE UPLOAD  — Supabase Storage
+================================================================ */
+async function handleImageUpload (input) {
+  const file = input.files[0]
+  if (!file) return
+  showToast("⏳ جاري رفع الصورة…")
+  try {
+    const ext      = file.name.split(".").pop().toLowerCase()
+    const filename = `${Date.now()}.${ext}`
+    const { error: upErr } = await db.storage
+      .from("menu-images")
+      .upload(filename, file, { upsert: true })
+    if (upErr) throw upErr
+    const { data: { publicUrl } } = db.storage
+      .from("menu-images")
+      .getPublicUrl(filename)
+    document.getElementById("if-image").value = publicUrl
+    /* show preview */
+    const prev = document.getElementById("if-img-preview")
+    document.getElementById("if-img-preview-el").src = publicUrl
+    prev.classList.remove("hidden")
+    showToast("✓ تم رفع الصورة")
+  } catch (err) {
+    console.error(err)
+    showToast("❌ فشل رفع الصورة")
+  }
+}
+
+function toggleOldPrice (toggleEl) {
+  const wrap = document.getElementById("if-old-price-wrap")
+  wrap.classList.toggle("hidden", !toggleEl.classList.contains("on"))
+}
+
+/* ================================================================
+   ADMIN: DRAG-AND-DROP  (categories + items)
+================================================================ */
+let _dragId   = null
+let _dragType = null   // "cat" | "item"
+
+function onDragStart (e, id, type) {
+  _dragId   = id
+  _dragType = type
+  e.dataTransfer.effectAllowed = "move"
+  setTimeout(() => e.target.classList.add("dragging"), 0)
+}
+function onDragEnd (e) {
+  e.target.classList.remove("dragging")
+  document.querySelectorAll(".drag-over").forEach(el => el.classList.remove("drag-over"))
+}
+function onDragOver (e) { e.preventDefault(); e.currentTarget.classList.add("drag-over") }
+function onDragLeave (e) { e.currentTarget.classList.remove("drag-over") }
+
+async function onDropCat (e, targetId) {
+  e.preventDefault()
+  e.currentTarget.classList.remove("drag-over")
+  if (_dragType !== "cat" || _dragId === targetId) return
+  const src = liveCategories.find(c => c.id === _dragId)
+  const tgt = liveCategories.find(c => c.id === targetId)
+  if (!src || !tgt) return
+  const tmp = src.sort_order; src.sort_order = tgt.sort_order; tgt.sort_order = tmp
+  await Promise.all([
+    db.from("categories").update({sort_order: src.sort_order}).eq("id", src.id),
+    db.from("categories").update({sort_order: tgt.sort_order}).eq("id", tgt.id),
+  ])
+  renderAdminCategories()
+}
+
+async function onDropItem (e, targetId) {
+  e.preventDefault()
+  e.currentTarget.classList.remove("drag-over")
+  if (_dragType !== "item" || _dragId === targetId) return
+  const src = liveItems.find(i => i.id === _dragId)
+  const tgt = liveItems.find(i => i.id === targetId)
+  if (!src || !tgt) return
+  const tmp = src.sort_order; src.sort_order = tgt.sort_order; tgt.sort_order = tmp
+  await Promise.all([
+    db.from("items").update({sort_order: src.sort_order}).eq("id", src.id),
+    db.from("items").update({sort_order: tgt.sort_order}).eq("id", tgt.id),
+  ])
+  renderAdminItems()
 }
 
 /* ================================================================
