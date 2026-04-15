@@ -1413,6 +1413,7 @@ async function init () {
   if (params.get("admin") === "1") {
     document.getElementById("customer-view").classList.add("hidden")
     document.getElementById("admin-view").classList.remove("hidden")
+    document.getElementById("loading-screen").classList.add("done")
     initAdminPanel()
     return
   }
