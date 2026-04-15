@@ -230,7 +230,8 @@
     <div class="relative h-48 overflow-hidden">
       <img
         id="cover-img"
-        src="https://picsum.photos/800/400?random=1"
+        src=""
+        style="display:none"
         alt="cover"
         class="w-full h-full object-cover"
       />
@@ -242,7 +243,8 @@
     <div class="flex justify-center -mt-10 relative z-10">
       <img
         id="logo-img"
-        src="https://picsum.photos/80/80?random=77"
+        src=""
+        style="display:none"
         alt="logo"
         class="w-20 h-20 rounded-full border-4 border-white shadow-lg object-cover"
       />
@@ -1349,7 +1351,7 @@ const ITEMS = [
     name_ar: "كوكاكولا",          name_en: "Coca-Cola",
     desc_ar: "مشروب غازي كوكاكولا مثلج",
     desc_en: "Ice cold Coca-Cola",
-    price: 7, image_url: "https://picsum.photos/400/300?random=304",
+    price: 7, image_url: null,
     allergens: [] },
 ]
 
@@ -1703,9 +1705,11 @@ function openItemModal (itemId) {
 
   const name = lang === "ar" ? activeItem.name_ar : activeItem.name_en
   const desc = lang === "ar" ? activeItem.desc_ar  : activeItem.desc_en
-  const img  = activeItem.image_url || `https://picsum.photos/600/400?random=${itemId}`
+  const img  = activeItem.image_url || ""
 
-  document.getElementById("modal-img").src         = img
+  const modalImg = document.getElementById("modal-img")
+  if (img) { modalImg.src = img; modalImg.style.display = "" }
+  else      { modalImg.style.display = "none" }
   document.getElementById("modal-img").alt         = name
   document.getElementById("modal-name").textContent = name
   document.getElementById("modal-desc").textContent = desc || ""
@@ -1800,7 +1804,7 @@ function renderModalCustomizations (itemId) {
 }
 
 function onCustomChange (groupId, optIdx, input) {
-  const group = CUSTOMIZATIONS.find(c => c.id === groupId)
+  const group = liveCustomizations.find(c => c.id === groupId)
   if (!group) return
 
   /* update visual border */
@@ -2390,9 +2394,11 @@ function renderAdminItems () {
          ondragleave="onDragLeave(event)"
          ondrop="onDropItem(event,${item.id})">
       <span class="text-gray-300 text-sm cursor-grab select-none">⠿</span>
-      <img src="${item.image_url||`https://picsum.photos/60/60?random=${item.id}`}"
-           class="w-12 h-12 rounded-xl object-cover flex-shrink-0"
-           onerror="this.src='https://picsum.photos/60/60?random=${item.id+5}'"/>
+      ${item.image_url
+        ? `<img src="${item.image_url}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0"
+                onerror="this.outerHTML='<div class=\\"w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-xl flex-shrink-0\\">🍽️</div>'"/>`
+        : `<div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-xl flex-shrink-0">🍽️</div>`
+      }
       <div class="flex-1 min-w-0">
         <p class="font-bold text-gray-800 text-sm leading-tight">${item.name_ar}</p>
         <p class="text-xs text-gray-400">${item.price} ريال</p>
